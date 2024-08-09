@@ -32,7 +32,7 @@ const eventSchema = new Schema({
         zip_code: {
             type: String,
             required: false
-        },
+        }
     },
     createdBy: {
         type: Schema.Types.ObjectId,
