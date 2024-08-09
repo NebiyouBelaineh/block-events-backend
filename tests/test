@@ -1,7 +1,0 @@
-#!/usr/bin/bash
-curl -s --user 'api:3694d3c20db852b314f07b9f66d4f8ca-a26b1841-d6f6b8ce' \
- https://api.mailgun.net/v3/sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org/messages \
- -F from='Excited User <mailgun@sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org>' \
- -F to=dtindiwensi@gmail.com \
- -F subject='Hello' \
- -F text='Testing some Mailgun awesomeness!'
