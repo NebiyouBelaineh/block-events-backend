@@ -4,9 +4,9 @@ import EventController from '../controllers/EventControllers';
 const router = express.Router();
 
 // Get all events
-router.get('/', EventController.getEvent);
+router.get('/', EventController.getAllEvents);
 
-router.get('/:id', EventController.getEvent);
+router.get('/:id', EventController.getEventById);
 
 router.post('/', EventController.createEvent);
 
