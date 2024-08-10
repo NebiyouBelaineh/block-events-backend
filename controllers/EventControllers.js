@@ -100,7 +100,143 @@ class EventController {
 
   static async deleteEvent(req, res) {
     const { id } = req.params;
-    res.send(`Event with id: ${id} deleted`);
+    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
+
+    try {
+      const event = await Event.findById(id);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      // Remove the event to be deleted from attendees in all users
+      await User.updateMany(
+        { _id: { $in: event.attendees } },
+        {
+          $pull: { registeredEvents: event._id },
+        },
+      );
+      await Event.findByIdAndDelete(id);
+
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      return res.json({ message: 'Event successfully deleted' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while deleting event', error });
+    }
+  }
+
+  /* Gets all the events registered by a user */
+  static async getRegisteredEvents(req, res) {
+    const { id } = req.params;
+    if (!id || validateId(id) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate Id' });
+    }
+    try {
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      const userRegisteredEvents = await Event.find({ _id: { $in: user.registeredEvents } });
+      return res.json({ userRegisteredEvents });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while getting events', error });
+    }
+  }
+
+  /* Gets all the events created by a user */
+  static async getEventsByCreator(req, res) {
+    const { id } = req.params;
+    if (!id || validateId(id) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate Id' });
+    }
+    try {
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      const myEvents = await Event.find({ _id: { $in: user.createdEvents } });
+      return res.json({ myEvents });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while getting events', error });
+    }
+  }
+
+  /* Gets all the attendees of an event */
+  static async getEventAttendees(req, res) {
+    const { id } = req.params;
+    if (!id || validateId(id) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate Id' });
+    }
+    try {
+      const event = await Event.findById(id);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      const attendees = await User.find({ _id: { $in: event.attendees } });
+      return res.json({ attendees });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while getting attendees', error });
+    }
+  }
+
+  /* Register for an event */
+  static async registerEvent(req, res) {
+    const { id } = req.params;
+    if (!id || validateId(id) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate Id' });
+    }
+    try {
+      const event = await Event.findById(id);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (user.registeredEvents.includes(event._id)) {
+        return res.status(400).json({ error: 'User has already registered for this event' });
+      }
+      await User.updateOne(
+        { _id: req.user._id },
+        {
+          $push: { registeredEvents: event._id },
+        },
+      );
+      return res.json({ message: 'Event registered successfully' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while registering for event', error });
+    }
+  }
+
+  /* Unregister for an event */
+  static async unregisterEvent(req, res) {
+    const { id } = req.params;
+    if (!id || validateId(id) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate Id' });
+    }
+    try {
+      const event = await Event.findById(id);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (!user.registeredEvents.includes(event._id)) {
+        return res.status(400).json({ error: 'User has not registered for this event' });
+      }
+      await User.updateOne(
+        { _id: req.user._id },
+        {
+          $pull: { registeredEvents: event._id },
+        },
+      );
+      return res.json({ message: 'Event unregistered successfully' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while unregistering for event', error });
+    }
   }
 }
 

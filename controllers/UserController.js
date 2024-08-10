@@ -1,4 +1,5 @@
 import User from '../models/user';
+import Event from '../models/events';
 import { validateId } from '../services/Validators';
 
 class UserController {
@@ -33,7 +34,7 @@ class UserController {
     const user = await User.findOne({ _id: id })
       .catch((error) => (res.status(500).json({ error: `Error occured while finding user: ${error.message} ` })));
     if (!user) {
-      return res.status(404).json({ error: 'Event not found' });
+      return res.status(404).json({ error: 'User not found' });
     }
     return res.json(user);
   }
@@ -78,7 +79,31 @@ class UserController {
 
   // Only for admin
   static async deleteUser(req, res) {
-    res.send('User deleted');
+    const { id } = req.params;
+    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
+
+    try {
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Delete events created by the user
+      await Event.deleteMany({ createdBy: id });
+
+      // Remove the user from attendees in all events
+      await Event.updateMany(
+        { attendees: id },
+        { $pull: { attendees: id } },
+      );
+
+      // Delete the user
+      await User.findOneAndDelete(id);
+
+      return res.json({ message: 'User and related data deleted successfully' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while deleting user', error });
+    }
   }
 }
 
