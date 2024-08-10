@@ -8,6 +8,7 @@
     "start": "nodemon app.js --exec babel-node --presets @babel/preset-env",
     "dev": "babel-node --presets @babel/preset-env",
     "lint": "./node_modules/.bin/eslint",
+    "fix-lint": "./node_modules/.bin/eslint --fix",
     "check-lint": "lint [0-9]*.js",
     "close-db-connection": "babel-node --presets @babel/preset-env ./config/closeDbConnection.js"
   },
