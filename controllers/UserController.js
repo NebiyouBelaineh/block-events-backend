@@ -1,4 +1,5 @@
 import User from '../models/user';
+import { validateId } from '../services/Validators';
 
 class UserController {
   // Current End Points are only for testing
@@ -7,34 +8,34 @@ class UserController {
     const {
       userName, email, password, profile,
     } = req.body;
-    if (!email) { res.status(400).json({ error: 'Email is required' }); }
-    if (!password) { res.status(400).json({ error: 'Password is required' }); }
+    if (!email) { return res.status(400).json({ error: 'Email is required' }); }
+    if (!password) { return res.status(400).json({ error: 'Password is required' }); }
 
-    const newUser = new User({
-      userName: userName || email,
-      email,
-      password,
-      profile,
-    });
+    try {
+      const newUser = new User({
+        userName: userName || email,
+        email,
+        password,
+        profile,
+      });
 
-    await newUser.save().then((user) => res.json(user)).catch((error) => {
-      res.json({ message: 'Error occured while saving user', error });
-    });
+      await newUser.save();
+      return res.status(201).json({ message: 'User created successfully.', newUser });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occured while creating user', error });
+    }
   }
 
   static async getUserById(req, res) {
     const { id } = req.params;
-    if (!id) { res.status(400).json({ error: 'ID is required' }); }
+    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
 
-    const user = await User.findOne({ _id: id }).catch((error) => {
-      res.json({ message: 'Error occured while getting user', error });
-    });
-
+    const user = await User.findOne({ _id: id })
+      .catch((error) => (res.status(500).json({ error: `Error occured while finding user: ${error.message} ` })));
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
-    } else {
-      res.json({ user });
+      return res.status(404).json({ error: 'Event not found' });
     }
+    return res.json(user);
   }
 
   static async getAllUsers(req, res) {
@@ -50,24 +51,29 @@ class UserController {
 
   static async updateUser(req, res) {
     const { id } = req.params;
-    if (!id) { res.status(400).json({ error: 'ID is required' }); }
+    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
 
     const user = await User.findOne({ _id: id });
-    if (!user) { res.status(404).json({ error: 'User not found' }); }
+    if (!user) { return res.status(404).json({ error: 'User not found' }); }
 
-    // password and email would need their own handler to update for security reasons
-    const notAllowed = ['password', 'email'];
-    const reqBody = req.body;
-    const entries = Object.entries(reqBody);
-    const filteredEntries = entries.filter(([key]) => !notAllowed.includes(key));
-    const filteredObj = Object.fromEntries(filteredEntries);
-    console.log(filteredObj);
-    const updatedInfo = await User.findByIdAndUpdate(
-      id,
-      filteredObj,
-      { new: true }, // Return the updated user
-    );
-    res.json({ message: 'User information updated', updatedInfo });
+    try {
+      /* password, email, _id , creadEvents and registerdEvents would need
+       their own endpoints to be updated for security and convenience
+       */
+      const notAllowed = ['password', 'email', '_id', 'createdEvents', 'registeredEvents'];
+      const reqBody = req.body;
+      const entries = Object.entries(reqBody);
+      const filteredEntries = entries.filter(([key]) => !notAllowed.includes(key));
+      const filteredObj = Object.fromEntries(filteredEntries);
+      const updatedInfo = await User.findByIdAndUpdate(
+        id,
+        filteredObj,
+        { new: true }, // Return the updated user
+      );
+      return res.json({ message: 'User updated', updatedInfo });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occured while updating user', error });
+    }
   }
 
   // Only for admin
