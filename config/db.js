@@ -8,12 +8,19 @@ const username = process.env.DB_USERNAME;
 const password = process.env.DB_PASSWORD;
 const cluster = process.env.DB_CLUSTER;
 
+// eslint-disable-next-line no-unused-vars
+const localDBUrl = process.env.DB_CLUSTER_LOCAL_URL;
+
+// eslint-disable-next-line no-unused-vars
 const dbUri = `mongodb+srv://${username}:${password}${cluster}`;
 
 const connectDB = async () => {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(dbUri);
+    /* Connect to MongoDB atlas */
+    // await mongoose.connect(dbUri);
+
+    /* Connect to local MongoDB */
+    await mongoose.connect(localDBUrl);
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
