@@ -11,6 +11,14 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// Bad JSON handler
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON, please check format!' });
+  }
+  return next();
+});
+
 app.use('/api/users', userRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/status', checkDbStatus);
