@@ -72,6 +72,19 @@ class AuthController {
     }
   }
 
+  static restrict(...roles) {
+    return (req, res, next) => {
+      // Implement the logic here
+      const userRole = req.user.role; // Assuming req.user contains the user's role
+
+      if (!roles.includes(userRole)) {
+        return next(new AppError('You do not have permission to perform this action', 403));
+      }
+
+      return next();
+    };
+  }
+
   static async getAllUsers(req, res, next) {
     try {
       const users = await User.find();

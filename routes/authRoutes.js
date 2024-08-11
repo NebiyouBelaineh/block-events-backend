@@ -1,11 +1,10 @@
 import express from 'express';
 import AuthController from '../controllers/authController';
-// import AuthUser from '../middleware/authToken';
 
 const router = express.Router();
 
 router.post('/register', AuthController.register);
 router.post('/login', AuthController.login);
-router.get('/users', AuthController.protect, AuthController.getAllUsers);
+router.get('/users', AuthController.protect, AuthController.restrict('admin'), AuthController.getAllUsers);
 
 export default router;
