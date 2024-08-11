@@ -2,8 +2,11 @@ import express from 'express';
 import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes';
 import eventRoutes from './routes/eventRoutes';
+import authRoutes from './routes/authRoutes';
 import { checkDbStatus, getCounts } from './controllers/systemCheckControllers';
 import { connectDB, disconnectDB } from './config/db';
+import AppError from './util/appError';
+import globalErrorHandler from './controllers/errorController';
 
 // Load environment variables
 dotenv.config();
@@ -23,7 +26,14 @@ app.use('/api/users', userRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/status', checkDbStatus);
 app.use('/api/counts', getCounts);
+app.use('/api/auth', authRoutes);
 
+app.all('*', (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`));
+});
+
+// middlewhare handler
+app.use(globalErrorHandler);
 // Define the port
 const port = process.env.PORT || 3300;
 
