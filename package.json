@@ -19,7 +19,8 @@
     "form-data": "^4.0.0",
     "mailgun.js": "^10.2.3",
     "mongodb": "^6.8.0",
-    "mongoose": "^8.5.2"
+    "mongoose": "^8.5.2",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.0",
