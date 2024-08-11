@@ -12,14 +12,14 @@ router.put('/:id', AuthUser, EventController.updateEvent);
 router.delete('/:id', AuthUser, EventController.deleteEvent);
 
 // Register and Unregister for an event
-router.put('/:id/register', AuthUser, EventController.registerEvent);
-router.put('/:id/unregister', AuthUser, EventController.unregisterEvent);
+router.post('/:id/register', AuthUser, EventController.registerEvent);
+router.delete('/:id/unregister', AuthUser, EventController.unregisterEvent);
 
 // Get events by creator
-router.get('/creator/:id', AuthUser, EventController.getEventsByCreator);
+router.get('/:id/creator', AuthUser, EventController.getEventsByCreator);
 // Get events by user
-router.get('/user/:id/userevents', AuthUser, EventController.getRegisteredEvents);
+router.get('/:id/userevents', AuthUser, EventController.getRegisteredEvents);
 // Get event attendees
-router.get('/event/:id/attendees', AuthUser, EventController.getEventAttendees);
+router.get('/:id/attendees', AuthUser, EventController.getEventAttendees);
 
 export default router;
