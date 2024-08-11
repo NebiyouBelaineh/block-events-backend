@@ -12,12 +12,12 @@ class EventController {
       isRecurring, recurrenceRule, catagory, status,
     } = req.body;
 
-    if (!title) { res.status(400).json({ error: 'Title is required' }); }
-    if (!description) { res.status(400).json({ error: 'Description is required' }); }
-    if (!startDateTime) { res.status(400).json({ error: 'StartDateTime is required' }); }
-    if (!createdBy) { res.status(400).json({ error: 'CreatedBy is required' }); }
-    if (!location && validateLocation(location)) { res.status(400).json({ error: 'Location is missing or not complete.' }); }
-    if (!tags) { res.status(400).json({ error: 'Tags is required' }); }
+    if (!title) { return res.status(400).json({ error: 'Title is required' }); }
+    if (!description) { return res.status(400).json({ error: 'Description is required' }); }
+    if (!startDateTime) { return res.status(400).json({ error: 'StartDateTime is required' }); }
+    if (!createdBy) { return res.status(400).json({ error: 'CreatedBy is required' }); }
+    if (!location && validateLocation(location)) { return res.status(400).json({ error: 'Location is missing or not complete.' }); }
+    if (!tags) { return res.status(400).json({ error: 'Tags is required' }); }
 
     try {
       const newEvent = new Event({
@@ -43,10 +43,10 @@ class EventController {
         { $push: { createdEvents: event._id } },
         { new: true }, // Return the updated user
       );
-      res.status(201).json({ message: 'Event created successfully', newEvent });
+      return res.status(201).json({ message: 'Event created successfully', newEvent });
     } catch (error) {
       // console.error('Error occurred while creating event:', error);
-      res.status(500).json({ message: 'Error occured while creating event', error });
+      return res.status(500).json({ message: 'Error occured while creating event', error });
     }
   }
 
@@ -64,14 +64,12 @@ class EventController {
   }
 
   static async getAllEvents(req, res) {
-    const events = await Event.find().catch((error) => {
-      res.status(500).json({ error: `Error occured while finding event: ${error.message} ` });
-    });
+    const events = await Event.find()
+      .catch((error) => (res.status(500).json({ error: `Error occured while finding event: ${error.message} ` })));
     if (!events) {
-      res.status(404).json({ error: 'Events not found' });
-    } else {
-      res.json({ events });
+      return res.status(404).json({ error: 'Events not found' });
     }
+    return res.json({ events });
   }
 
   static async updateEvent(req, res) {
@@ -128,16 +126,24 @@ class EventController {
   /* Gets all the events registered by a user */
   static async getRegisteredEvents(req, res) {
     const { id } = req.params;
+    const { userId } = req.body;
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Id' });
     }
+    if (!userId || validateId(userId) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate userId' });
+    }
     try {
-      const user = await User.findById(id);
+      const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
+      const notAllowed = ['createdBy', 'attendees', '_id'];
       const userRegisteredEvents = await Event.find({ _id: { $in: user.registeredEvents } });
-      return res.json({ userRegisteredEvents });
+      const filteredRegisteredEvents = userRegisteredEvents.map((event) => Object.fromEntries(
+        Object.entries(event.toObject()).filter(([key]) => !notAllowed.includes(key)),
+      ));
+      return res.json({ userRegisteredEvents: filteredRegisteredEvents });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while getting events', error });
     }
@@ -146,11 +152,16 @@ class EventController {
   /* Gets all the events created by a user */
   static async getEventsByCreator(req, res) {
     const { id } = req.params;
+    const { userId } = req.body;
+
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Id' });
     }
+    if (!userId || validateId(userId) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate userId' });
+    }
     try {
-      const user = await User.findById(id);
+      const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -173,7 +184,22 @@ class EventController {
         return res.status(404).json({ error: 'Event not found' });
       }
       const attendees = await User.find({ _id: { $in: event.attendees } });
-      return res.json({ attendees });
+
+      if (attendees && attendees.length > 0) {
+        // Filter out unnecessary fields
+        const allowedFields = ['profile', 'userName', 'email'];
+        const filterdAttendees = attendees.map((attendee) => {
+          const filteredAttendee = {};
+          allowedFields.forEach((field) => {
+            if (attendee[field]) {
+              filteredAttendee[field] = attendee[field];
+            }
+          });
+          return filteredAttendee;
+        });
+        return res.json(filterdAttendees);
+      }
+      return res.status(404).json({ error: 'Attendees not found' });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while getting attendees', error });
     }
@@ -182,15 +208,20 @@ class EventController {
   /* Register for an event */
   static async registerEvent(req, res) {
     const { id } = req.params;
+    const { userId } = req.body;
+
     if (!id || validateId(id) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate Id' });
+      return res.status(400).json({ error: 'Please provide appropriate Event Id' });
+    }
+    if (!userId || validateId(userId) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate userId' });
     }
     try {
       const event = await Event.findById(id);
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
       }
-      const user = await User.findById(req.user._id);
+      const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -198,9 +229,15 @@ class EventController {
         return res.status(400).json({ error: 'User has already registered for this event' });
       }
       await User.updateOne(
-        { _id: req.user._id },
+        { _id: userId },
         {
           $push: { registeredEvents: event._id },
+        },
+      );
+      await Event.updateOne(
+        { _id: id },
+        {
+          $push: { attendees: userId },
         },
       );
       return res.json({ message: 'Event registered successfully' });
@@ -212,6 +249,7 @@ class EventController {
   /* Unregister for an event */
   static async unregisterEvent(req, res) {
     const { id } = req.params;
+    const { userId } = req.body;
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Id' });
     }
@@ -220,7 +258,7 @@ class EventController {
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
       }
-      const user = await User.findById(req.user._id);
+      const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -228,12 +266,18 @@ class EventController {
         return res.status(400).json({ error: 'User has not registered for this event' });
       }
       await User.updateOne(
-        { _id: req.user._id },
+        { _id: userId },
         {
           $pull: { registeredEvents: event._id },
         },
       );
-      return res.json({ message: 'Event unregistered successfully' });
+      await Event.updateOne(
+        { _id: id },
+        {
+          $pull: { attendees: userId },
+        },
+      );
+      return res.json({ message: 'Unregistered event successfully' });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while unregistering for event', error });
     }

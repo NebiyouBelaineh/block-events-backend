@@ -2,9 +2,9 @@ import User from '../models/user';
 import Event from '../models/events';
 import { validateId } from '../services/Validators';
 
+const allowed = ['userName', 'profile', 'email'];
+
 class UserController {
-  // Current End Points are only for testing
-  // DB connection will be handled with next steps
   static async createUser(req, res) {
     const {
       userName, email, password, profile,
@@ -21,7 +21,10 @@ class UserController {
       });
 
       await newUser.save();
-      return res.status(201).json({ message: 'User created successfully.', newUser });
+      const filtered = Object.fromEntries(
+        Object.entries(newUser.toObject()).filter(([key]) => allowed.includes(key)),
+      );
+      return res.status(201).json({ message: 'User created successfully.', newUser: filtered });
     } catch (error) {
       return res.status(500).json({ message: 'Error occured while creating user', error });
     }
@@ -36,7 +39,10 @@ class UserController {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    return res.json(user);
+    const filteredUser = Object.fromEntries(
+      Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
+    );
+    return res.json({ user: filteredUser });
   }
 
   static async getAllUsers(req, res) {
@@ -46,7 +52,10 @@ class UserController {
     if (!users) {
       res.status(404).json({ error: 'Users not found' });
     } else {
-      res.json({ users });
+      const filteredUsers = users.map((user) => Object.fromEntries(
+        Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
+      ));
+      res.json({ users: filteredUsers });
     }
   }
 
@@ -58,20 +67,20 @@ class UserController {
     if (!user) { return res.status(404).json({ error: 'User not found' }); }
 
     try {
-      /* password, email, _id , creadEvents and registerdEvents would need
-       their own endpoints to be updated for security and convenience
-       */
-      const notAllowed = ['password', 'email', '_id', 'createdEvents', 'registeredEvents'];
       const reqBody = req.body;
-      const entries = Object.entries(reqBody);
-      const filteredEntries = entries.filter(([key]) => !notAllowed.includes(key));
-      const filteredObj = Object.fromEntries(filteredEntries);
+      let filteredObj = Object.fromEntries(
+        Object.entries(reqBody).filter(([key]) => allowed.includes(key)),
+      );
       const updatedInfo = await User.findByIdAndUpdate(
         id,
         filteredObj,
         { new: true }, // Return the updated user
       );
-      return res.json({ message: 'User updated', updatedInfo });
+
+      filteredObj = Object.fromEntries(
+        Object.entries(updatedInfo.toObject()).filter(([key]) => allowed.includes(key)),
+      );
+      return res.json({ message: 'User updated', filteredObj });
     } catch (error) {
       return res.status(500).json({ message: 'Error occured while updating user', error });
     }
