@@ -8,13 +8,16 @@ export const eventInvite = async(req, res) => {
   const event = await Event.findById(eventId);
   const user = await User.findById(userId);
   const data = {
-    from: 'Block Events <mailgun@sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org>',
-    to: 'dtindiwensi@gmail.com',
+    from: {
+      name: 'Block Events',
+      address: 'testblockevents@gmail.com',
+    },
+    to: `${email}`,
     subject: `Invitation to ${event.title}`,
     text: `Hello,\n ${user.email} would like to invite you to attend ${event.title}\n/
     If you would like more details please follow this link`
   }
-  mg.messages.create('sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org', data)
+  mg.sendMail(data)
   .then(msg => console.log(msg)) 
   .catch(err => console.log(err));
 };
@@ -23,14 +26,18 @@ export const eventFeedback = async(req, res) => {
   const { eventId, userId, feedback} = req.body;
   const event = await Event.findById(eventId);
   const user = await User.findById(userId);
+  const eventAuthor = await User.findById(event.createdBy);
   const data = {
-    from: 'Block Events <mailgun@sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org>',
-    to: 'dtindiwensi@gmail.com',
-    subject: `Feedback for ${event.title}`,
-    text: `Hello,\n ${user.email} would like to give you feedback on ${event.title}\n/
-    ${feedback}`
-  }
-  mg.messages.create('sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org', data)
+    from: {
+      name: 'Block Events',
+      address: 'testblockevents@gmail.com',
+    },
+    to: `${eventAuthor.email}`,
+      subject: `Feedback for ${event.title}`,
+      text: `Hello,\n ${user.email} would like to give you feedback on ${event.title}\n/
+      ${feedback}`
+    }
+  mg.sendMail(data)
   .then(msg => console.log(msg)) 
   .catch(err => console.log(err));
 };
@@ -71,17 +78,21 @@ export const sendDueNotifications = async() => {
 
   dueNotifications.forEach(async notification => {
     const event = await Event.findById(notification.eventId);
-    //const attendees = event.attendees;
-    //attendees.forEach(async attendee => {
-    //  const user = await User.findById(attendee);
-    const data = {
-      from: 'Block Events <mailgun@sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org>',
-      to: 'dtindiwensi@gmail.com',
-      subject: `Reminder for ${event.title}`,
-      text: `Hello,\n ${event.title} is due on ${event.date}\n/`
-    }
-    mg.messages.create('sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org', data)
-    .then(msg => console.log(msg)) 
-    .catch(err => console.log(err));
+    const attendees = event.attendees;
+    attendees.forEach(async attendee => {
+      const user = await User.findById(attendee);
+      const data = {
+        from: {
+          name: 'Block Events',
+          address: 'testblockevents@gmail.com',
+        },
+        to: `${user.email}`,
+        subject: `Reminder for ${event.title}`,
+        text: `Hello,\n ${event.title} is due on ${event.date}\n/`
+      }
+      mg.sendMail(data)
+      .then(msg => console.log(msg)) 
+      .catch(err => console.log(err));
+    });
   });
 }

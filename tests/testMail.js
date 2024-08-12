@@ -1,11 +1,14 @@
 import mg from '../config/emailService.js';
 
 //only works for specific emails because of a pricing issue  
-mg.messages.create('sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org', {
-	from: 'Block Events <mailgun@sandboxcc6abd444c3c47e3b0a57a7051ce7ead.mailgun.org>',
-	to: 'dtindiwensi@gmail.com',
+mg.sendMail({
+	from: {
+    name: 'Block Events',
+    address: 'testblockevents@gmail.com'
+  },
+	to: 'dtindiwensi@gmail.com, dasiimwe0@gmail.com',
 	subject: 'Hello',
-	text: 'Testing some Mailgun awesomeness!',
+	text: 'Testing some nodemailer awesomeness!',
 })
 .then(msg => console.log(msg)) // logs response data
 .catch(err => console.log(err)); // logs any error
