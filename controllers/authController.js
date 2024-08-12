@@ -10,6 +10,13 @@ class AuthController {
       const newUser = await User.create(req.body);
 
       const token = AuthController.signToken(newUser._id);
+      res.cookie('jwt', token, {
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+      });
+      // delete the password from the returned object
+      newUser.password = undefined;
       return res.status(201).json({
         status: 'success',
         token,
@@ -40,6 +47,11 @@ class AuthController {
         return next(new AppError('Incorrect email or password', 401));
       }
       const token = AuthController.signToken(user._id);
+      res.cookie('jwt', token, {
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+      });
       return res.status(200).json({
         status: 'success',
         token,
