@@ -48,9 +48,8 @@ class notificationController {
       });
   }
 
-  static async eventRegistration(eventId, userId) {
-    const event = await Event.findById(eventId);
-    const user = await User.findById(userId);
+  static async eventRegistration(event, user) {
+    //console.log(user.email);
     const data = {
       from: {
         name: 'Block Events',
@@ -61,12 +60,14 @@ class notificationController {
       text: `Hello,\n You have successfully registered for ${event.title}`,
     };
     mg.sendMail(data)
-      .then((msg) => console.log(msg))
-      .catch((err) => console.log(err));
+      .then(() => true)
+      .catch((err) => {
+        console.log(err);
+        throw new Error(err);
+      });
   }
 
-  static async eventCancellation(eventId) {
-    const event = await Event.findById(eventId);
+  static async eventCancellation(event) {
     const { attendees } = event;
     attendees.forEach(async (attendee) => {
       const user = await User.findById(attendee);
@@ -80,13 +81,15 @@ class notificationController {
         text: `Hello,\n ${event.title} has been cancelled by ${event.createdBy}\n`,
       };
       mg.sendMail(data)
-        .then((msg) => console.log(msg))
-        .catch((err) => console.log(err));
+        .then(() => true)
+        .catch((err) => {
+          console.log(err);
+          throw new Error(err);
+        });
     });
   }
 
-  static async eventUpdate(eventId) {
-    const event = await Event.findById(eventId);
+  static async eventUpdate(event) {
     const { attendees } = event;
     attendees.forEach(async (attendee) => {
       const user = await User.findById(attendee);
@@ -100,14 +103,16 @@ class notificationController {
         text: `Hello,\n ${event.title} has been updated by ${event.createdBy}\n`,
       };
       mg.sendMail(data)
-        .then((msg) => console.log(msg))
-        .catch((err) => console.log(err));
+      .then(() => true)
+      .catch((err) => {
+        console.log(err);
+        throw new Error(err);
+      });
     });
   }
 
   // to be used called after an event is created
-  static async setEventReminder(eventId) {
-    const event = await Event.findById(eventId);
+  static async setEventReminder(event) {
     const eventDate = event.startDateTime;
     const weekBeforeDate = new Date(eventDate.getTime() - 7 * 24 * 60 * 60 * 1000);
     const dayBeforeDate = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
@@ -157,8 +162,11 @@ class notificationController {
           text: `Hello,\n ${event.title} is comming up on ${event.date}\n`,
         };
         mg.sendMail(data)
-          .then((msg) => console.log(msg))
-          .catch((err) => console.log(err));
+          .then(() => true)
+          .catch((err) => {
+            console.log(err);
+            throw new Error(err);
+        })
       });
     });
   }

@@ -46,6 +46,7 @@ class EventController {
         { new: true }, // Return the updated user
       );
       // Call setEventReminder() to set notification for 1 week and 1 day prior to event
+      notificationController.setEventReminder(event.toObject());
       return res.status(201).json({ message: 'Event created successfully', newEvent });
     } catch (error) {
       // console.error('Error occurred while creating event:', error);
@@ -94,6 +95,7 @@ class EventController {
         { new: true },
       );
       // Send email notification of event update
+      notificationController.eventUpdate(updatedEvent.toObject());
       return res.json({ message: 'Event updated.', updatedEvent });
     } catch (error) {
       return res.status(500).json({ message: 'Error occured while updating event', error });
@@ -116,13 +118,11 @@ class EventController {
           $pull: { registeredEvents: event._id },
         },
       );
-      await Event.findByIdAndDelete(id);
-
-      if (!event) {
-        return res.status(404).json({ error: 'Event not found' });
-      }
       // Send email notification of that event is canceled and
       // then delete the notification for that event
+      await notificationController.eventCancellation(event.toObject());
+      await notificationController.deleteEventReminder(id)
+      await Event.findByIdAndDelete(id);
       return res.json({ message: 'Event successfully deleted' });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while deleting event', error });
@@ -133,7 +133,7 @@ class EventController {
    * Accessed through /api/events/registered
    */
   static async getRegisteredEvents(req, res) {
-    const { userId } = req.body;
+    const userId = req.user._id;
 
     if (!userId || validateId(userId) === false) {
       return res.status(400).json({ error: 'Please provide appropriate userId' });
@@ -219,7 +219,7 @@ class EventController {
    */
   static async registerEvent(req, res) {
     const { id } = req.params;
-    const { userId } = req.body;
+    const userId = req.user._id;
 
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Event Id' });
@@ -252,7 +252,10 @@ class EventController {
         },
       );
       // Send email notification
-      return res.json({ message: 'Event registered successfully' });
+      const mail = notificationController.eventRegistration(event.toObject(), user.toObject());
+      if (mail) {
+        return res.json({ message: 'Event registered successfully' });
+      }
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while registering for event', error });
     }
@@ -263,7 +266,7 @@ class EventController {
    */
   static async unregisterEvent(req, res) {
     const { id } = req.params;
-    const { userId } = req.body;
+    const userId = req.user._id;
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Id' });
     }
