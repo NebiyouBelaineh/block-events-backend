@@ -4,27 +4,27 @@ import Event from '../models/events';
 import Notification from '../models/notification';
 
 class notificationController {
-  static async eventInvite(req, res) {
-    const { eventId, userId, email } = req.body;
+  static async eventInvite(eventId, userId, emails, res) {
     const event = await Event.findById(eventId);
     const user = await User.findById(userId);
-    const data = {
-      from: {
-        name: 'Block Events',
-        address: 'testblockevents@gmail.com',
-      },
-      to: `${email}`,
-      subject: `Invitation to ${event.title}`,
-      text: `Hello,\n ${user.email} would like to invite you to attend ${event.title}\n/
-      If you would like more details please follow this link`,
-    };
-    mg.sendMail(data)
-      .then((msg) => res.status(200).json(msg))
-      .catch((err) => res.send(err));
+    emails.forEach(async (email) => {
+      const data = {
+        from: {
+          name: 'Block Events',
+          address: 'testblockevents@gmail.com',
+        },
+        to: `${email}`,
+        subject: `Invitation to ${event.title}`,
+        text: `Hello,\n ${user.email} would like to invite you to attend ${event.title}\n/
+        If you would like more details please follow this link`,
+      };
+      mg.sendMail(data)
+        .then((msg) => res.status(200).json(msg))
+        .catch((err) => res.send(err));
+    });
   }
 
-  static async eventFeedback(req, res) {
-    const { eventId, userId, feedback } = req.body;
+  static async eventFeedback(eventId, userId, feedback, res) {
     const event = await Event.findById(eventId);
     const user = await User.findById(userId);
     const eventAuthor = await User.findById(event.createdBy);
@@ -43,10 +43,47 @@ class notificationController {
       .catch((err) => res.send(err));
   }
 
+  static async eventRegistration(eventId, userId, res) {
+    const event = await Event.findById(eventId);
+    const user = await User.findById(userId);
+    const data = {
+      from: {
+        name: 'Block Events',
+        address: 'testblockevents@gmail.com',
+      },
+      to: `${user.email}`,
+      subject: `Registration for ${event.title}`,
+      text: `Hello,\n You have successfully registered for ${event.title}`,
+    };
+    mg.sendMail(data)
+      .then((msg) => res.status(200).json(msg))
+      .catch((err) => res.send(err));
+  }
+
+  static async eventCancellation(eventId, res) {
+    const event = await Event.findById(eventId);
+    const { attendees } = event;
+    attendees.forEach(async (attendee) => {
+      const user = await User.findById(attendee);
+      const data = {
+        from: {
+          name: 'Block Events',
+          address: 'testblockevents@gmail.com',
+        },
+        to: `${user.email}`,
+        subject: `Event Cancellation for ${event.title}`,
+        text: `Hello,\n ${event.title} has been cancelled by ${event.createdBy}\n/`,
+      };
+      mg.sendMail(data)
+        .then((msg) => res.status(200).json(msg))
+        .catch((err) => res.send(err));
+    });
+  }
+
   // to be used called after an event is created
   static async setEventReminder(eventId) {
     const event = await Event.findById(eventId);
-    const eventDate = event.date;
+    const eventDate = event.startDateTime;
     const weekBeforeDate = new Date(eventDate.getTime() - 7 * 24 * 60 * 60 * 1000);
     const dayBeforeDate = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
@@ -62,6 +99,10 @@ class notificationController {
     });
     await weekBefore.save();
     await dayBefore.save();
+  }
+
+  static async deleteEventReminder(eventId) {
+    await Notification.deleteMany({ eventId });
   }
 
   // will be used in app.js to check for due notifications
@@ -88,7 +129,7 @@ class notificationController {
           },
           to: `${user.email}`,
           subject: `Reminder for ${event.title}`,
-          text: `Hello,\n ${event.title} is due on ${event.date}\n/`,
+          text: `Hello,\n ${event.title} is comming up on ${event.date}\n`,
         };
         mg.sendMail(data)
           .then((msg) => console.log(msg))

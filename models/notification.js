@@ -5,7 +5,7 @@ const { Schema, model } = mongoose;
 const notificationSchema = new Schema({
   eventId: {
     type: Schema.Types.ObjectId,
-    required: false,
+    required: true,
   },
   timeLeft: {
     type: String,
