@@ -6,7 +6,7 @@ mg.sendMail({
     name: 'Block Events',
     address: 'testblockevents@gmail.com'
   },
-	to: 'dtindiwensi@gmail.com, dasiimwe0@gmail.com',
+	to: 'nebiyouseifu2@gmail.com',
 	subject: 'Hello',
 	text: 'Testing some nodemailer awesomeness!',
 })
