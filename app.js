@@ -1,6 +1,6 @@
 import express from 'express';
-import { sendDueNotifications } from './controllers/notificationController.js';
 import dotenv from 'dotenv';
+import notificationController from './controllers/notificationController';
 import userRoutes from './routes/userRoutes';
 import eventRoutes from './routes/eventRoutes';
 import { checkDbStatus, getCounts } from './controllers/systemCheckControllers';
@@ -11,11 +11,13 @@ dotenv.config();
 
 const app = express();
 
+const { sendDueNotifications } = notificationController;
+// eslint-disable-next-line import/no-extraneous-dependencies
 const cron = require('node-cron');
 
 cron.schedule('0 0 * * *', async () => {
   await sendDueNotifications();
-}
+});
 app.use(express.json());
 
 // Bad JSON handler
