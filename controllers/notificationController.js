@@ -20,7 +20,7 @@ class notificationController {
       };
       mg.sendMail(data)
         .then((msg) => console.log(msg))
-        .catch((err) => console.log(err));;
+        .catch((err) => console.log(err));
     });
   }
 
