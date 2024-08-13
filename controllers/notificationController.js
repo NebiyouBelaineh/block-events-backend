@@ -4,7 +4,7 @@ import Event from '../models/events';
 import Notification from '../models/notification';
 
 class notificationController {
-  static async eventInvite(eventId, userId, emails, res) {
+  static async eventInvite(eventId, userId, emails) {
     const event = await Event.findById(eventId);
     const user = await User.findById(userId);
     emails.forEach(async (email) => {
@@ -19,12 +19,12 @@ class notificationController {
         If you would like more details please follow this link`,
       };
       mg.sendMail(data)
-        .then((msg) => res.status(200).json(msg))
-        .catch((err) => res.send(err));
+        .then((msg) => console.log(msg))
+        .catch((err) => console.log(err));;
     });
   }
 
-  static async eventFeedback(eventId, userId, feedback, res) {
+  static async eventFeedback(eventId, userId, feedback) {
     const event = await Event.findById(eventId);
     const user = await User.findById(userId);
     const eventAuthor = await User.findById(event.createdBy);
@@ -39,11 +39,11 @@ class notificationController {
         ${feedback}`,
     };
     mg.sendMail(data)
-      .then((msg) => res.status(200).json(msg))
-      .catch((err) => res.send(err));
+      .then((msg) => console.log(msg))
+      .catch((err) => console.log(err));
   }
 
-  static async eventRegistration(eventId, userId, res) {
+  static async eventRegistration(eventId, userId) {
     const event = await Event.findById(eventId);
     const user = await User.findById(userId);
     const data = {
@@ -56,11 +56,11 @@ class notificationController {
       text: `Hello,\n You have successfully registered for ${event.title}`,
     };
     mg.sendMail(data)
-      .then((msg) => res.status(200).json(msg))
-      .catch((err) => res.send(err));
+      .then((msg) => console.log(msg))
+      .catch((err) => console.log(err));
   }
 
-  static async eventCancellation(eventId, res) {
+  static async eventCancellation(eventId) {
     const event = await Event.findById(eventId);
     const { attendees } = event;
     attendees.forEach(async (attendee) => {
@@ -72,11 +72,31 @@ class notificationController {
         },
         to: `${user.email}`,
         subject: `Event Cancellation for ${event.title}`,
-        text: `Hello,\n ${event.title} has been cancelled by ${event.createdBy}\n/`,
+        text: `Hello,\n ${event.title} has been cancelled by ${event.createdBy}\n`,
       };
       mg.sendMail(data)
-        .then((msg) => res.status(200).json(msg))
-        .catch((err) => res.send(err));
+        .then((msg) => console.log(msg))
+        .catch((err) => console.log(err));
+    });
+  }
+
+  static async eventUpdate(eventId) {
+    const event = await Event.findById(eventId);
+    const { attendees } = event;
+    attendees.forEach(async (attendee) => {
+      const user = await User.findById(attendee);
+      const data = {
+        from: {
+          name: 'Block Events',
+          address: 'testblockevents@gmail.com',
+        },
+        to: `${user.email}`,
+        subject: `Event Update for ${event.title}`,
+        text: `Hello,\n ${event.title} has been updated by ${event.createdBy}\n`,
+      };
+      mg.sendMail(data)
+        .then((msg) => console.log(msg))
+        .catch((err) => console.log(err));
     });
   }
 
