@@ -1,4 +1,5 @@
 import express from 'express';
+import { sendDueNotifications } from './controllers/notificationController.js';
 import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes';
 import eventRoutes from './routes/eventRoutes';
@@ -9,6 +10,12 @@ import { connectDB, disconnectDB } from './config/db';
 dotenv.config();
 
 const app = express();
+
+const cron = require('node-cron');
+
+cron.schedule('0 0 * * *', async () => {
+  await sendDueNotifications();
+}
 app.use(express.json());
 
 // Bad JSON handler
