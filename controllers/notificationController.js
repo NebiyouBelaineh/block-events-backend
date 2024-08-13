@@ -1,3 +1,4 @@
+import validator from 'validator';
 import mg from '../config/emailService';
 import User from '../models/user';
 import Event from '../models/events';
@@ -5,30 +6,29 @@ import Notification from '../models/notification';
 
 class notificationController {
   static async eventInvite(event, user, emails) {
-    // console.log('Inside feedback', event, user, emails);
     emails.forEach(async (email) => {
-      const data = {
-        from: {
-          name: 'Block Events',
-          address: 'testblockevents@gmail.com',
-        },
-        to: `${email}`,
-        subject: `Invitation to ${event.title}`,
-        text: `Hello,\n ${user.email} would like to invite you to attend ${event.title}\n/
-        If you would like more details please follow this link`,
-      };
-      mg.sendMail(data)
-        .then(() => true)
-        .catch((err) => {
-          console.log('Error: ', err);
-          throw new Error(err);
-        });
+      if (validator.isEmail(email)) {
+        const data = {
+          from: {
+            name: 'Block Events',
+            address: 'testblockevents@gmail.com',
+          },
+          to: `${email}`,
+          subject: `Invitation to ${event.title}`,
+          text: `Hello,\n ${user.email} would like to invite you to attend ${event.title}\n/
+          If you would like more details please follow this link`,
+        };
+        mg.sendMail(data)
+          .then(() => true)
+          .catch((err) => {
+            console.log('Error: ', err);
+            throw new Error(err);
+          });
+      }
     });
   }
 
   static async eventFeedback(event, user, feedback) {
-    // console.log('Inside feedback', event, user, feedback);
-    // const eventCreator = await User.findById(event.createdBy);
     const data = {
       from: {
         name: 'Block Events',
@@ -39,7 +39,6 @@ class notificationController {
       text: `Hello,\n ${user.email} would like to give you feedback on ${event.title}\n/
         ${feedback}`,
     };
-    // console.log(msg); true;
     mg.sendMail(data)
       .then(() => true)
       .catch((err) => {
@@ -49,7 +48,6 @@ class notificationController {
   }
 
   static async eventRegistration(event, user) {
-    //console.log(user.email);
     const data = {
       from: {
         name: 'Block Events',
@@ -103,11 +101,11 @@ class notificationController {
         text: `Hello,\n ${event.title} has been updated by ${event.createdBy}\n`,
       };
       mg.sendMail(data)
-      .then(() => true)
-      .catch((err) => {
-        console.log(err);
-        throw new Error(err);
-      });
+        .then(() => true)
+        .catch((err) => {
+          console.log(err);
+          throw new Error(err);
+        });
     });
   }
 
@@ -118,12 +116,12 @@ class notificationController {
     const dayBeforeDate = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000);
 
     const weekBefore = new Notification({
-      eventId,
+      eventId: event._id,
       timeLeft: 'week',
       dueDate: weekBeforeDate,
     });
     const dayBefore = new Notification({
-      eventId,
+      eventId: event._id,
       timeLeft: 'day',
       dueDate: dayBeforeDate,
     });
@@ -166,7 +164,7 @@ class notificationController {
           .catch((err) => {
             console.log(err);
             throw new Error(err);
-        })
+          });
       });
     });
   }

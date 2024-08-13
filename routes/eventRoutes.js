@@ -18,7 +18,7 @@ router.get('/', AuthController.protect, EventController.getAllEvents);
 router.get('/:id', AuthController.protect, EventController.getEventById);
 router.post('/', AuthController.protect, EventController.createEvent);
 router.put('/:id', AuthController.protect, EventController.updateEvent);
-router.delete('/:id', AuthController.protect, EventController.deleteEvent);
+router.delete('/:id', AuthController.protect, AuthController.restrict('admin'), EventController.deleteEvent);
 
 // Register and Unregister for an event
 router.post('/:id/register', AuthController.protect, EventController.registerEvent);

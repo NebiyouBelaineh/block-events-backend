@@ -67,14 +67,14 @@ const userSchema = new Schema({
   registeredEvents: [{ type: Schema.Types.ObjectId, ref: 'Event' }], // Gets an array of events registered by user
 });
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function preSave(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
   return next();
 });
 
-userSchema.methods.correctPassword = async function (
+userSchema.methods.correctPassword = async function correctPass(
   candidatePassword,
   userPassword,
 ) {
@@ -82,7 +82,7 @@ userSchema.methods.correctPassword = async function (
   return isMatch;
 };
 
-userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+userSchema.methods.changedPasswordAfter = function changePassAfter(JWTTimestamp) {
   if (this.passwordChangedAt) {
     const changedTimestamp = parseInt(
       this.passwordChangedAt.getTime() / 1000,

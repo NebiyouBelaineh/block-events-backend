@@ -6,6 +6,7 @@ const allowed = ['userName', 'profile', 'email'];
 
 class UserController {
   static async createUser(req, res) {
+    const { user } = req;
     const {
       userName, email, password, profile,
     } = req.body;
@@ -21,10 +22,13 @@ class UserController {
       });
 
       await newUser.save();
-      const filtered = Object.fromEntries(
-        Object.entries(newUser.toObject()).filter(([key]) => allowed.includes(key)),
-      );
-      return res.status(201).json({ message: 'User created successfully.', newUser: filtered });
+      if (user.toObject().role === 'user') {
+        const filtered = Object.fromEntries(
+          Object.entries(newUser.toObject()).filter(([key]) => allowed.includes(key)),
+        );
+        return res.status(201).json({ message: 'User created successfully.', newUser: filtered });
+      }
+      return res.status(201).json({ message: 'User created successfully.', newUser });
     } catch (error) {
       return res.status(500).json({ message: 'Error occured while creating user', error });
     }
@@ -39,10 +43,13 @@ class UserController {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    const filteredUser = Object.fromEntries(
-      Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
-    );
-    return res.json({ user: filteredUser });
+    if (user.toObject().role === 'user') {
+      const filteredUser = Object.fromEntries(
+        Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
+      );
+      return res.json({ user: filteredUser });
+    }
+    return res.json({ user });
   }
 
   /** Gets all users
@@ -55,10 +62,6 @@ class UserController {
     if (!users) {
       res.status(404).json({ error: 'Users not found' });
     } else {
-      // const filteredUsers = users.map((user) => Object.fromEntries(
-      //   Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
-      // ));
-      // res.json({ users: filteredUsers }); // Public Response
       res.json({ users }); // Admin Response
     }
   }

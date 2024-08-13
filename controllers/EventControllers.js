@@ -121,7 +121,7 @@ class EventController {
       // Send email notification of that event is canceled and
       // then delete the notification for that event
       await notificationController.eventCancellation(event.toObject());
-      await notificationController.deleteEventReminder(id)
+      await notificationController.deleteEventReminder(id);
       await Event.findByIdAndDelete(id);
       return res.json({ message: 'Event successfully deleted' });
     } catch (error) {
@@ -135,9 +135,9 @@ class EventController {
   static async getRegisteredEvents(req, res) {
     const userId = req.user._id;
 
-    if (!userId || validateId(userId) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate userId' });
-    }
+    // if (!userId || validateId(userId) === false) {
+    //   return res.status(400).json({ error: 'Please provide appropriate userId' });
+    // }
     try {
       const user = await User.findById(userId);
       if (!user) {
@@ -158,7 +158,7 @@ class EventController {
    * Accessed through /api/events/myevents
   */
   static async getEventsByCreator(req, res) {
-    const { userId } = req.body;
+    const userId = req.body;
 
     if (!userId || validateId(userId) === false) {
       return res.status(400).json({ error: 'Please provide appropriate userId' });
@@ -219,28 +219,21 @@ class EventController {
    */
   static async registerEvent(req, res) {
     const { id } = req.params;
-    const userId = req.user._id;
+    const { user } = req;
 
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Event Id' });
-    }
-    if (!userId || validateId(userId) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate userId' });
     }
     try {
       const event = await Event.findById(id);
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
       }
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
       if (user.registeredEvents.includes(event._id)) {
         return res.status(400).json({ error: 'User has already registered for this event' });
       }
       await User.updateOne(
-        { _id: userId },
+        { _id: user._id },
         {
           $push: { registeredEvents: event._id },
         },
@@ -248,7 +241,7 @@ class EventController {
       await Event.updateOne(
         { _id: id },
         {
-          $push: { attendees: userId },
+          $push: { attendees: user._id },
         },
       );
       // Send email notification
@@ -256,6 +249,7 @@ class EventController {
       if (mail) {
         return res.json({ message: 'Event registered successfully' });
       }
+      return res.status(500).json({ error: 'Error occurred while registering for event, check logs' });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while registering for event', error });
     }
@@ -266,7 +260,7 @@ class EventController {
    */
   static async unregisterEvent(req, res) {
     const { id } = req.params;
-    const userId = req.user._id;
+    const { user } = req;
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Id' });
     }
@@ -275,15 +269,11 @@ class EventController {
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
       }
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
       if (!user.registeredEvents.includes(event._id)) {
         return res.status(400).json({ error: 'User has not registered for this event' });
       }
       await User.updateOne(
-        { _id: userId },
+        { _id: user._id },
         {
           $pull: { registeredEvents: event._id },
         },
@@ -291,7 +281,7 @@ class EventController {
       await Event.updateOne(
         { _id: id },
         {
-          $pull: { attendees: userId },
+          $pull: { attendees: user._id },
         },
       );
       return res.json({ message: 'Unregistered event successfully' });
@@ -302,13 +292,10 @@ class EventController {
 
   static async sendInvitation(req, res) {
     const { eventId, emails } = req.body; // Email should be validated
-    const userId = req.user._id;
+    const { user } = req;
     // console.log(userId, req.user);
     if (!eventId || validateId(eventId) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Id' });
-    }
-    if (!userId || validateId(userId) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate userId' });
     }
     if (!emails || emails.length === 0) {
       return res.status(400).json({ error: 'Please provide appropriate email(s)' });
@@ -318,10 +305,6 @@ class EventController {
       const event = await Event.findById(eventId);
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
-      }
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: `User with id ${userId} not found` });
       }
       const invitationStatus = notificationController.eventInvite(
         event.toObject(),
@@ -339,13 +322,11 @@ class EventController {
 
   static async sendFeedBack(req, res) {
     const { id } = req.params;
-    const { userId, feedback } = req.body; // Email should be validated
+    const { feedback } = req.body; // Email should be validated
+    const { user } = req;
 
     if (!id || validateId(id) === false) {
       return res.status(400).json({ error: 'Please provide appropriate Id' });
-    }
-    if (!userId || validateId(userId) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate userId' });
     }
     if (!feedback || feedback.length === 0) {
       return res.status(400).json({ error: 'Feedback is empty or not provided' });
@@ -355,10 +336,6 @@ class EventController {
       const event = await Event.findById(id);
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
-      }
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: `User with id ${userId} not found` });
       }
       const feedbackStatus = notificationController.eventFeedback(event.toObject(), user, feedback);
       if (feedbackStatus) {
