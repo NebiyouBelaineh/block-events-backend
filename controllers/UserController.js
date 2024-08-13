@@ -45,6 +45,9 @@ class UserController {
     return res.json({ user: filteredUser });
   }
 
+  /** Gets all users
+   * This Route may need protection and should only be for admin
+    */
   static async getAllUsers(req, res) {
     const users = await User.find().catch((error) => {
       res.json({ message: 'Error occured while getting users', error });
@@ -52,10 +55,11 @@ class UserController {
     if (!users) {
       res.status(404).json({ error: 'Users not found' });
     } else {
-      const filteredUsers = users.map((user) => Object.fromEntries(
-        Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
-      ));
-      res.json({ users: filteredUsers });
+      // const filteredUsers = users.map((user) => Object.fromEntries(
+      //   Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
+      // ));
+      // res.json({ users: filteredUsers }); // Public Response
+      res.json({ users }); // Admin Response
     }
   }
 

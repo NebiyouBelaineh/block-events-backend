@@ -1,6 +1,7 @@
 import Event from '../models/events';
 import User from '../models/user';
 import { validateLocation, validateId } from '../services/Validators';
+import notificationController from './notificationController';
 
 class EventController {
   // Current End Points are only for testing
@@ -8,18 +9,19 @@ class EventController {
   static async createEvent(req, res) {
     const {
       title, description, startDateTime, endDateTime,
-      location, createdBy, attendees, tags, media,
+      location, attendees, tags, media,
       isRecurring, recurrenceRule, catagory, status,
     } = req.body;
 
     if (!title) { return res.status(400).json({ error: 'Title is required' }); }
     if (!description) { return res.status(400).json({ error: 'Description is required' }); }
     if (!startDateTime) { return res.status(400).json({ error: 'StartDateTime is required' }); }
-    if (!createdBy) { return res.status(400).json({ error: 'CreatedBy is required' }); }
-    if (!location && validateLocation(location)) { return res.status(400).json({ error: 'Location is missing or not complete.' }); }
+    // if (!createdBy) { return res.status(400).json({ error: 'CreatedBy is required' }); }
+    if (!location || !validateLocation(location)) { return res.status(400).json({ error: 'Location is missing or not complete.' }); }
     if (!tags) { return res.status(400).json({ error: 'Tags is required' }); }
 
     try {
+      const createdBy = req.user._id;
       const newEvent = new Event({
         title,
         description,
@@ -43,6 +45,7 @@ class EventController {
         { $push: { createdEvents: event._id } },
         { new: true }, // Return the updated user
       );
+      // Call setEventReminder() to set notification for 1 week and 1 day prior to event
       return res.status(201).json({ message: 'Event created successfully', newEvent });
     } catch (error) {
       // console.error('Error occurred while creating event:', error);
@@ -52,7 +55,7 @@ class EventController {
 
   static async getEventById(req, res) {
     const { id } = req.params;
-
+    // console.log('Inside getEventById', id);
     if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
 
     const event = await Event.findOne({ _id: id })
@@ -90,6 +93,7 @@ class EventController {
         filteredObj,
         { new: true },
       );
+      // Send email notification of event update
       return res.json({ message: 'Event updated.', updatedEvent });
     } catch (error) {
       return res.status(500).json({ message: 'Error occured while updating event', error });
@@ -117,6 +121,8 @@ class EventController {
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
       }
+      // Send email notification of that event is canceled and
+      // then delete the notification for that event
       return res.json({ message: 'Event successfully deleted' });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while deleting event', error });
@@ -245,6 +251,7 @@ class EventController {
           $push: { attendees: userId },
         },
       );
+      // Send email notification
       return res.json({ message: 'Event registered successfully' });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while registering for event', error });
@@ -287,6 +294,76 @@ class EventController {
       return res.json({ message: 'Unregistered event successfully' });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while unregistering for event', error });
+    }
+  }
+
+  static async sendInvitation(req, res) {
+    const { eventId, emails } = req.body; // Email should be validated
+    const userId = req.user._id;
+    // console.log(userId, req.user);
+    if (!eventId || validateId(eventId) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate Id' });
+    }
+    if (!userId || validateId(userId) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate userId' });
+    }
+    if (!emails || emails.length === 0) {
+      return res.status(400).json({ error: 'Please provide appropriate email(s)' });
+    }
+
+    try {
+      const event = await Event.findById(eventId);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: `User with id ${userId} not found` });
+      }
+      const invitationStatus = notificationController.eventInvite(
+        event.toObject(),
+        user.toObject(),
+        emails,
+      );
+      if (invitationStatus) {
+        return res.json({ message: 'Invitation sent.' });
+      }
+      return res.status(500).json({ message: 'Error occurred while sending feedback, check logs' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while sending invitation', error });
+    }
+  }
+
+  static async sendFeedBack(req, res) {
+    const { id } = req.params;
+    const { userId, feedback } = req.body; // Email should be validated
+
+    if (!id || validateId(id) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate Id' });
+    }
+    if (!userId || validateId(userId) === false) {
+      return res.status(400).json({ error: 'Please provide appropriate userId' });
+    }
+    if (!feedback || feedback.length === 0) {
+      return res.status(400).json({ error: 'Feedback is empty or not provided' });
+    }
+
+    try {
+      const event = await Event.findById(id);
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ error: `User with id ${userId} not found` });
+      }
+      const feedbackStatus = notificationController.eventFeedback(event.toObject(), user, feedback);
+      if (feedbackStatus) {
+        return res.json({ message: 'Feedback sent successfully' });
+      }
+      return res.status(500).json({ message: 'Error occurred while sending feedback, check logs' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while sending feedback', error });
     }
   }
 }

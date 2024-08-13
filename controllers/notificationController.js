@@ -4,9 +4,8 @@ import Event from '../models/events';
 import Notification from '../models/notification';
 
 class notificationController {
-  static async eventInvite(eventId, userId, emails) {
-    const event = await Event.findById(eventId);
-    const user = await User.findById(userId);
+  static async eventInvite(event, user, emails) {
+    // console.log('Inside feedback', event, user, emails);
     emails.forEach(async (email) => {
       const data = {
         from: {
@@ -19,28 +18,34 @@ class notificationController {
         If you would like more details please follow this link`,
       };
       mg.sendMail(data)
-        .then((msg) => console.log(msg))
-        .catch((err) => console.log(err));
+        .then(() => true)
+        .catch((err) => {
+          console.log('Error: ', err);
+          throw new Error(err);
+        });
     });
   }
 
-  static async eventFeedback(eventId, userId, feedback) {
-    const event = await Event.findById(eventId);
-    const user = await User.findById(userId);
-    const eventAuthor = await User.findById(event.createdBy);
+  static async eventFeedback(event, user, feedback) {
+    // console.log('Inside feedback', event, user, feedback);
+    // const eventCreator = await User.findById(event.createdBy);
     const data = {
       from: {
         name: 'Block Events',
         address: 'testblockevents@gmail.com',
       },
-      to: `${eventAuthor.email}`,
+      to: `${user.email}`,
       subject: `Feedback for ${event.title}`,
       text: `Hello,\n ${user.email} would like to give you feedback on ${event.title}\n/
         ${feedback}`,
     };
+    // console.log(msg); true;
     mg.sendMail(data)
-      .then((msg) => console.log(msg))
-      .catch((err) => console.log(err));
+      .then(() => true)
+      .catch((err) => {
+        console.log('Error: ', err);
+        throw new Error(err);
+      });
   }
 
   static async eventRegistration(eventId, userId) {

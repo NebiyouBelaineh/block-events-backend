@@ -1,26 +1,30 @@
 import express from 'express';
 import EventController from '../controllers/EventControllers';
-import AuthUser from '../middleware/authToken';
+import AuthController from '../controllers/authController';
 
 const router = express.Router();
 
 // Get events by creator
-router.get('/myevents', AuthUser, EventController.getEventsByCreator);
+router.get('/myevents', AuthController.protect, EventController.getEventsByCreator);
 // Get events by user
-router.get('/registered', AuthUser, EventController.getRegisteredEvents);
+router.get('/registered', AuthController.protect, EventController.getRegisteredEvents);
+// Send invitation
+router.post('/invite', AuthController.protect, EventController.sendInvitation);
+// Send feedback
+router.post('/:id/feedback', AuthController.protect, EventController.sendFeedBack);
 
 // GET all, GET by id, POST, PUT, DELETE events
-router.get('/', AuthUser, EventController.getAllEvents);
-router.get('/:id', AuthUser, EventController.getEventById);
-router.post('/', AuthUser, EventController.createEvent);
-router.put('/:id', AuthUser, EventController.updateEvent);
-router.delete('/:id', AuthUser, EventController.deleteEvent);
+router.get('/', AuthController.protect, EventController.getAllEvents);
+router.get('/:id', AuthController.protect, EventController.getEventById);
+router.post('/', AuthController.protect, EventController.createEvent);
+router.put('/:id', AuthController.protect, EventController.updateEvent);
+router.delete('/:id', AuthController.protect, EventController.deleteEvent);
 
 // Register and Unregister for an event
-router.post('/:id/register', AuthUser, EventController.registerEvent);
-router.delete('/:id/unregister', AuthUser, EventController.unregisterEvent);
+router.post('/:id/register', AuthController.protect, EventController.registerEvent);
+router.delete('/:id/unregister', AuthController.protect, EventController.unregisterEvent);
 
 // Get event attendees
-router.get('/:id/attendees', AuthUser, EventController.getEventAttendees);
+router.get('/:id/attendees', AuthController.protect, EventController.getEventAttendees);
 
 export default router;
