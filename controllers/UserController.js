@@ -1,40 +1,48 @@
 import User from '../models/user';
+import Event from '../models/events';
+import { validateId } from '../services/Validators';
+
+const allowed = ['userName', 'profile', 'email'];
 
 class UserController {
-  // Current End Points are only for testing
-  // DB connection will be handled with next steps
   static async createUser(req, res) {
     const {
       userName, email, password, profile,
     } = req.body;
-    if (!email) { res.status(400).json({ error: 'Email is required' }); }
-    if (!password) { res.status(400).json({ error: 'Password is required' }); }
+    if (!email) { return res.status(400).json({ error: 'Email is required' }); }
+    if (!password) { return res.status(400).json({ error: 'Password is required' }); }
 
-    const newUser = new User({
-      userName: userName || email,
-      email,
-      password,
-      profile,
-    });
+    try {
+      const newUser = new User({
+        userName: userName || email,
+        email,
+        password,
+        profile,
+      });
 
-    await newUser.save().then((user) => res.json(user)).catch((error) => {
-      res.json({ message: 'Error occured while saving user', error });
-    });
+      await newUser.save();
+      const filtered = Object.fromEntries(
+        Object.entries(newUser.toObject()).filter(([key]) => allowed.includes(key)),
+      );
+      return res.status(201).json({ message: 'User created successfully.', newUser: filtered });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occured while creating user', error });
+    }
   }
 
   static async getUserById(req, res) {
     const { id } = req.params;
-    if (!id) { res.status(400).json({ error: 'ID is required' }); }
+    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
 
-    const user = await User.findOne({ _id: id }).catch((error) => {
-      res.json({ message: 'Error occured while getting user', error });
-    });
-
+    const user = await User.findOne({ _id: id })
+      .catch((error) => (res.status(500).json({ error: `Error occured while finding user: ${error.message} ` })));
     if (!user) {
-      res.status(404).json({ error: 'User not found' });
-    } else {
-      res.json({ user });
+      return res.status(404).json({ error: 'User not found' });
     }
+    const filteredUser = Object.fromEntries(
+      Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
+    );
+    return res.json({ user: filteredUser });
   }
 
   static async getAllUsers(req, res) {
@@ -44,35 +52,67 @@ class UserController {
     if (!users) {
       res.status(404).json({ error: 'Users not found' });
     } else {
-      res.json({ users });
+      const filteredUsers = users.map((user) => Object.fromEntries(
+        Object.entries(user.toObject()).filter(([key]) => allowed.includes(key)),
+      ));
+      res.json({ users: filteredUsers });
     }
   }
 
   static async updateUser(req, res) {
     const { id } = req.params;
-    if (!id) { res.status(400).json({ error: 'ID is required' }); }
+    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
 
     const user = await User.findOne({ _id: id });
-    if (!user) { res.status(404).json({ error: 'User not found' }); }
+    if (!user) { return res.status(404).json({ error: 'User not found' }); }
 
-    // password and email would need their own handler to update for security reasons
-    const notAllowed = ['password', 'email'];
-    const reqBody = req.body;
-    const entries = Object.entries(reqBody);
-    const filteredEntries = entries.filter(([key]) => !notAllowed.includes(key));
-    const filteredObj = Object.fromEntries(filteredEntries);
-    console.log(filteredObj);
-    const updatedInfo = await User.findByIdAndUpdate(
-      id,
-      filteredObj,
-      { new: true }, // Return the updated user
-    );
-    res.json({ message: 'User information updated', updatedInfo });
+    try {
+      const reqBody = req.body;
+      let filteredObj = Object.fromEntries(
+        Object.entries(reqBody).filter(([key]) => allowed.includes(key)),
+      );
+      const updatedInfo = await User.findByIdAndUpdate(
+        id,
+        filteredObj,
+        { new: true }, // Return the updated user
+      );
+
+      filteredObj = Object.fromEntries(
+        Object.entries(updatedInfo.toObject()).filter(([key]) => allowed.includes(key)),
+      );
+      return res.json({ message: 'User updated', filteredObj });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occured while updating user', error });
+    }
   }
 
   // Only for admin
   static async deleteUser(req, res) {
-    res.send('User deleted');
+    const { id } = req.params;
+    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
+
+    try {
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Delete events created by the user
+      await Event.deleteMany({ createdBy: id });
+
+      // Remove the user from attendees in all events
+      await Event.updateMany(
+        { attendees: id },
+        { $pull: { attendees: id } },
+      );
+
+      // Delete the user
+      await User.findOneAndDelete(id);
+
+      return res.json({ message: 'User and related data deleted successfully' });
+    } catch (error) {
+      return res.status(500).json({ message: 'Error occurred while deleting user', error });
+    }
   }
 }
 
