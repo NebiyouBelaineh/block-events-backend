@@ -123,13 +123,12 @@ class EventController {
     }
   }
 
-  /* Gets all the events registered by a user */
+  /**
+   * Accessed through /api/events/registered
+   */
   static async getRegisteredEvents(req, res) {
-    const { id } = req.params;
     const { userId } = req.body;
-    if (!id || validateId(id) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate Id' });
-    }
+
     if (!userId || validateId(userId) === false) {
       return res.status(400).json({ error: 'Please provide appropriate userId' });
     }
@@ -149,14 +148,12 @@ class EventController {
     }
   }
 
-  /* Gets all the events created by a user */
+  /** Gets all the events created by a user
+   * Accessed through /api/events/myevents
+  */
   static async getEventsByCreator(req, res) {
-    const { id } = req.params;
     const { userId } = req.body;
 
-    if (!id || validateId(id) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate Id' });
-    }
     if (!userId || validateId(userId) === false) {
       return res.status(400).json({ error: 'Please provide appropriate userId' });
     }
@@ -165,14 +162,20 @@ class EventController {
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
+      const notAllowed = ['_id'];
       const myEvents = await Event.find({ _id: { $in: user.createdEvents } });
-      return res.json({ myEvents });
+      const filteredRegisteredEvents = myEvents.map((event) => Object.fromEntries(
+        Object.entries(event.toObject()).filter(([key]) => !notAllowed.includes(key)),
+      ));
+      return res.json({ myEvents: filteredRegisteredEvents });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while getting events', error });
     }
   }
 
-  /* Gets all the attendees of an event */
+  /** Gets all the attendees of an event
+   * Accessed through /api/events/:id/attendees
+  */
   static async getEventAttendees(req, res) {
     const { id } = req.params;
     if (!id || validateId(id) === false) {
@@ -205,7 +208,9 @@ class EventController {
     }
   }
 
-  /* Register for an event */
+  /** Register for an event
+   * Accessed through /api/events/:id/register
+   */
   static async registerEvent(req, res) {
     const { id } = req.params;
     const { userId } = req.body;
@@ -246,7 +251,9 @@ class EventController {
     }
   }
 
-  /* Unregister for an event */
+  /** Unregister for an event
+   * Accessed through /api/events/:id/unregister
+   */
   static async unregisterEvent(req, res) {
     const { id } = req.params;
     const { userId } = req.body;

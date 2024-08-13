@@ -4,6 +4,11 @@ import AuthUser from '../middleware/authToken';
 
 const router = express.Router();
 
+// Get events by creator
+router.get('/myevents', AuthUser, EventController.getEventsByCreator);
+// Get events by user
+router.get('/registered', AuthUser, EventController.getRegisteredEvents);
+
 // GET all, GET by id, POST, PUT, DELETE events
 router.get('/', AuthUser, EventController.getAllEvents);
 router.get('/:id', AuthUser, EventController.getEventById);
@@ -15,10 +20,6 @@ router.delete('/:id', AuthUser, EventController.deleteEvent);
 router.post('/:id/register', AuthUser, EventController.registerEvent);
 router.delete('/:id/unregister', AuthUser, EventController.unregisterEvent);
 
-// Get events by creator
-router.get('/:id/creator', AuthUser, EventController.getEventsByCreator);
-// Get events by user
-router.get('/:id/userevents', AuthUser, EventController.getRegisteredEvents);
 // Get event attendees
 router.get('/:id/attendees', AuthUser, EventController.getEventAttendees);
 
