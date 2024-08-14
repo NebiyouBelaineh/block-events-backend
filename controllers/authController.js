@@ -97,6 +97,14 @@ class AuthController {
     };
   }
 
+  static logout(req, res) {
+    res.cookie('jwt', 'loggedout', {
+      expires: new Date(Date.now() + 10 * 1000),
+      httpOnly: true,
+    });
+    return res.status(200).json({ status: 'success' });
+  }
+
   static async getAllUsers(req, res, next) {
     try {
       const users = await User.find();
