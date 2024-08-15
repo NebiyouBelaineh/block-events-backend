@@ -3,6 +3,7 @@ import AppError from '../util/appError';
 const handleErrorDb = () => new AppError('Duplicate key error', 500);
 const handleJWTError = () => new AppError('Invalid token. Please log in again', 401);
 const handleJWTExpired = () => new AppError('Your token has expired. Please log in again', 401);
+const handlePasswordMinLength = () => new AppError('Password is shorter than the minimum allowed length (8)', 401);
 
 module.exports = (err, req, res, next) => {
   let error = { ...err };
@@ -21,6 +22,9 @@ module.exports = (err, req, res, next) => {
     if (err.code === 11000) error = handleErrorDb();
     if (error.name === 'JsonWebTokenError') error = handleJWTError();
     if (error.name === 'TokenExpiredError') error = handleJWTExpired();
+    if (error.errors) {
+      if (error.errors.password.path === 'password' && error.errors.password.kind === 'minlength') error = handlePasswordMinLength();
+    }
     if (error.isOperational) {
       res.status(error.statusCode).json({
         status: error.status,
