@@ -24,8 +24,8 @@ cron.schedule('0 0 * * *', async () => {
 });
 
 const corsOptions = {
-  origin: 'http://localhost:3000', // Replace with your frontend's URL
-  credentials: true, // This allows the browser to send cookies with requests
+  origin: 'http://localhost:3000',
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
