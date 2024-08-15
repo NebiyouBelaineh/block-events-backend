@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import notificationController from './controllers/notificationController';
 import userRoutes from './routes/userRoutes';
 import eventRoutes from './routes/eventRoutes';
@@ -21,6 +22,14 @@ const cron = require('node-cron');
 cron.schedule('0 0 * * *', async () => {
   await sendDueNotifications();
 });
+
+const corsOptions = {
+  origin: 'http://localhost:3000', // Replace with your frontend's URL
+  credentials: true, // This allows the browser to send cookies with requests
+};
+
+app.use(cors(corsOptions));
+
 app.use(express.json());
 
 // Bad JSON handler
