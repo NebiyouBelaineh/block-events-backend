@@ -14,39 +14,39 @@ class AuthController {
     const errors = [];
 
     if (!email || validator.isEmpty(email.trim())) {
-      errors.push({ field: 'email', message: 'email is required' });
+      errors.push({ field: 'email', message: 'Email is required' });
     }
     if (!userName || validator.isEmpty(userName.trim())) {
-      errors.push({ field: 'userName', message: 'username is required' });
+      errors.push({ field: 'userName', message: 'Username is required' });
     }
     if (!password || validator.isEmpty(password.trim())) {
-      errors.push({ field: 'password', message: 'password is required' });
+      errors.push({ field: 'password', message: 'Password is required' });
     }
     if (!passwordConfirm || validator.isEmpty(passwordConfirm.trim())) {
-      errors.push({ field: 'passwordConfirm', message: 'passwordConfirm is required' });
+      errors.push({ field: 'passwordConfirm', message: 'PasswordConfirm is required' });
     }
-    if (errors.length > 0) {
-      return res.status(400).json({
-        errors,
-      });
+    // if (errors.length > 0) {
+    //   return res.status(400).json({
+    //     errors,
+    //   });
+    // }
+    if (!validator.isLength(password, { min: 8 }) && !validator.isEmpty(password.trim())) {
+      errors.push({ field: 'password', message: 'Password must be at least 8 characters' });
     }
-    if (!validator.isLength(password, { min: 8 })) {
-      errors.push({ field: 'password', message: 'password must be at least 8 characters' });
-    }
-    if (!validator.isEmail(email)) {
-      errors.push({ field: 'email', message: 'email is invalid' });
+    if (!validator.isEmail(email) && !validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is invalid' });
     }
     if (password !== passwordConfirm) {
       errors.push({ field: 'passwordConfirm', message: 'Passwords do not match' });
     }
     const user = await User.findOne({ userName });
     if (user) {
-      errors.push({ field: 'userName', message: 'userName already exists' });
+      errors.push({ field: 'userName', message: 'Username already exists' });
     }
     // if email is duplicated
     const userEmail = await User.findOne({ email });
     if (userEmail) {
-      errors.push({ field: 'email', message: 'email already exists' });
+      errors.push({ field: 'email', message: 'Email already exists' });
     }
     if (errors.length > 0) {
       return res.status(400).json({
@@ -89,17 +89,33 @@ class AuthController {
     }
   }
 
-  static async login(req, res, next) {
+  static async login(req, res) {
+    const { email, password } = req.body;
+    const errors = [];
+
+    if (!email || validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is required' });
+    }
+    if (!password || validator.isEmpty(password.trim())) {
+      errors.push({ field: 'password', message: 'Password is required' });
+    }
+    if (!validator.isEmail(email) && !validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is invalid' });
+    }
+
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return next(new AppError('Please provide email and password', 400));
-      }
-
+      console.log(errors);
       const user = await User.findOne({ email }).select('+password');
-      if (!user || !await user.correctPassword(password, user.password)) {
-        return next(new AppError('Incorrect email or password', 401));
+      if ((!user || !await user.correctPassword(password, user.password)) && errors.length === 0) {
+        errors.push({ field: 'server', message: 'Incorrect email or password' });
+        return res.status(401).json({
+          errors,
+        });
+      }
+      if (errors.length > 0) {
+        return res.status(400).json({
+          errors,
+        });
       }
       const token = AuthController.signToken(user._id);
       res.cookie('jwt', token, {
@@ -112,7 +128,10 @@ class AuthController {
         token,
       });
     } catch (error) {
-      return next(error);
+      return res.status(500).json({
+        field: 'server',
+        message: error.message,
+      });
     }
   }
 
