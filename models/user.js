@@ -1,7 +1,5 @@
 import mongoose from 'mongoose';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import validator from 'validator';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import bcrypt from 'bcryptjs';
 
 const { Schema, model } = mongoose;
@@ -10,7 +8,6 @@ const userSchema = new Schema({
   userName: {
     type: String,
     required: false,
-    unique: true,
   },
   profile: {
     firstName: {
@@ -32,10 +29,8 @@ const userSchema = new Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
-    unique: true,
+    required: false,
     lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email'],
   },
   role: {
     type: String,
@@ -44,20 +39,12 @@ const userSchema = new Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: 8,
+    required: false,
     select: false,
   },
   passwordConfirm: {
     type: String,
-    required: [true, 'Password confirmation is required'],
-    validate: {
-      // this work on create and save
-      validator(el) {
-        return el === this.password;
-      },
-      message: 'Passwords are not the same',
-    },
+    required: false,
   },
   passwordChangedAt: {
     type: Date,

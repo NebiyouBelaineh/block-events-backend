@@ -8,7 +8,7 @@ import authRoutes from './routes/authRoutes';
 import { checkDbStatus, getCounts } from './controllers/systemCheckControllers';
 import { connectDB, disconnectDB } from './config/db';
 import AppError from './util/appError';
-import globalErrorHandler from './controllers/errorController';
+// import globalErrorHandler from './controllers/errorController';
 
 // Load environment variables
 dotenv.config();
@@ -51,7 +51,7 @@ app.all('*', (req, res, next) => {
 });
 
 // middlewhare handler
-app.use(globalErrorHandler);
+// app.use(globalErrorHandler);
 // Define the port
 const port = process.env.PORT || 3300;
 
