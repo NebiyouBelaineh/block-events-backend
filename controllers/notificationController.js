@@ -133,6 +133,26 @@ class notificationController {
     await Notification.deleteMany({ eventId });
   }
 
+  static async serviceRequest(req, res) {
+    const { service } = req.body;
+    const user = req.user;
+    const data = {
+      from: {
+        name: 'Block Events',
+        address: 'testblockevents@gmail.com',
+      },
+      to: 'testblockevents@gmail.com',
+      subject: 'Service Request',
+      text: `Hello,\n ${user.email} would like to request ${service} services. Please contact for further details.`,
+    };
+    try {
+      const result = await mg.sendMail(data);
+      res.json({ message: 'Service request email sent successfully' });
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({ message: 'Error sending service request email' });
+    }
+  }
   // will be used in app.js to check for due notifications
   static async sendDueNotifications() {
     const today = new Date();
