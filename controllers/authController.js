@@ -11,7 +11,7 @@ class AuthController {
 
       const token = AuthController.signToken(newUser._id);
       res.cookie('jwt', token, {
-        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 60 * 60 * 1000),
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
       });
@@ -48,7 +48,8 @@ class AuthController {
       }
       const token = AuthController.signToken(user._id);
       res.cookie('jwt', token, {
-        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+        // Set to expire in minutes
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 60 * 60 * 1000),
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
       });
@@ -65,6 +66,7 @@ class AuthController {
     try {
       const token = (req.headers.authorization && req.headers.authorization.startsWith('Bearer')
         ? req.headers.authorization.split(' ')[1] : undefined);
+      // console.log(token, req.headers.authorization);
       if (!token) {
         return next(new AppError('You are not logged in', 401));
       }
@@ -99,9 +101,10 @@ class AuthController {
 
   static logout(req, res) {
     res.cookie('jwt', 'loggedout', {
-      expires: new Date(Date.now() + 10 * 1000),
+      expires: new Date(Date.now() + 1 * 1000),
       httpOnly: true,
     });
+    console.log('Logged out');
     return res.status(200).json({ status: 'success' });
   }
 
@@ -123,6 +126,32 @@ class AuthController {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRE,
     });
+  }
+
+  static async check(req, res) {
+    const token = (req.headers.authorization && req.headers.authorization.startsWith('Bearer')
+      ? req.headers.authorization.split(' ')[1] : undefined);
+    if (!token) {
+      console.log('No token found');
+      return res.status(200).json({ isAuthenticated: false, error: 'No token found' });
+    }
+    try {
+      const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+      const currentUser = await User.findById(decoded.id);
+      if (!currentUser) {
+        console.log('User not found');
+        return res.status(200).json({ isAuthenticated: false, error: 'User not found' });
+      }
+      // check if the user changed password after the token was issued
+      if (currentUser.changedPasswordAfter(decoded.iat)) {
+        console.log('User recently changed password');
+        return res.status(200).json({ isAuthenticated: false, error: 'User recently changed password. Please log in again' });
+      }
+      return res.status(200).json({ isAuthenticated: true });
+    } catch (error) {
+      console.log(error.message);
+      return res.status(200).json({ isAuthenticated: false, error: 'Invalid token' });
+    }
   }
 }
 
