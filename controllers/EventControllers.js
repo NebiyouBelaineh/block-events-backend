@@ -1,58 +1,210 @@
+// eslint-disable-next-line import/no-extraneous-dependencies
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import validator from 'validator';
 import Event from '../models/events';
 import User from '../models/user';
-import { validateLocation, validateId } from '../services/Validators';
+import { validateId } from '../services/Validators';
 import notificationController from './notificationController';
+
+// Ensure the media folder exists
+const mediaDir = path.join(__dirname, '../public/media');
+if (!fs.existsSync(mediaDir)) {
+  fs.mkdirSync(mediaDir, { recursive: true });
+}
+
+// Set up multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, mediaDir); // Save files to public/media folder
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Limit file size to 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    return cb(new Error('Only images are allowed'));
+  },
+});
 
 class EventController {
   // Current End Points are only for testing
   // DB connection will be handled with next steps
   static async createEvent(req, res) {
-    const {
-      title, description, startDateTime, endDateTime,
-      location, attendees, tags, media,
-      isRecurring, recurrenceRule, catagory, status,
-    } = req.body;
+    // Use multer middleware to handle file uploads
+    upload.array('media')(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({
+          field: 'media',
+          message: err.message,
+        });
+      }
 
-    if (!title) { return res.status(400).json({ error: 'Title is required' }); }
-    if (!description) { return res.status(400).json({ error: 'Description is required' }); }
-    if (!startDateTime) { return res.status(400).json({ error: 'StartDateTime is required' }); }
-    // if (!createdBy) { return res.status(400).json({ error: 'CreatedBy is required' }); }
-    if (!location || !validateLocation(location)) { return res.status(400).json({ error: 'Location is missing or not complete.' }); }
-    if (!tags) { return res.status(400).json({ error: 'Tags is required' }); }
+      const {
+        title, description, location,
+        organizerAddress, organizerName,
+        organizerEmail, startDateTime,
+        endDateTime, category, status, tags,
+      } = req.body;
+      const media = req.files.map((file) => file.filename); // Get the filenames of uploaded files
+      const errors = [];
 
-    try {
-      const createdBy = req.user._id;
-      const newEvent = new Event({
-        title,
-        description,
-        location,
-        startDateTime,
-        endDateTime,
-        createdBy,
-        attendees,
-        tags,
-        media,
-        catagory,
-        status,
-        recurrenceRule,
-        isRecurring,
-      });
+      // Validate fields
+      if (!title || !validator.isLength(title.trim(), { min: 1 })) {
+        errors.push({ field: 'title', message: 'Title is required' });
+      }
+      if (!location || !validator.isLength(location.trim(), { min: 1 })) {
+        errors.push({ field: 'location', message: 'Location is required' });
+      }
+      if (!description || !validator.isLength(description.trim(), { min: 1 })) {
+        errors.push({ field: 'description', message: 'Description is required' });
+      }
+      if (!validator.isLength(organizerAddress.trim(), { min: 1 })) {
+        errors.push({ field: 'organizerAddress', message: 'Valid organizer address is required' });
+      }
+      if (!validator.isLength(organizerName.trim(), { min: 1 })) {
+        errors.push({ field: 'organizerName', message: 'Valid organizer name is required' });
+      }
+      if (!validator.isLength(organizerEmail.trim(), { min: 1 })) {
+        errors.push({ field: 'organizerEmail', message: 'Valid organizer email is required' });
+      }
+      if (!validator.isEmail(organizerEmail) && !validator.isEmpty(organizerEmail.trim())) {
+        errors.push({ field: 'organizerEmail', message: 'Valid organizer email is required' });
+      }
+      if (!startDateTime) {
+        errors.push({ field: 'startDate', message: 'Start date-time is required' });
+      }
+      if (!endDateTime) {
+        errors.push({ field: 'endDate', message: 'End date-time are required' });
+      }
+      if (startDateTime >= endDateTime && startDateTime && endDateTime) {
+        errors.push({ field: 'startDate', message: 'End date-time must be after Start date-time' });
+        errors.push({ field: 'endDate', message: 'End date-time must be after Start date-time' });
+      }
+      if (!category || !validator.isLength(category.trim(), { min: 1 })) {
+        errors.push({ field: 'category', message: 'Category is required' });
+      }
+      if (!status || !validator.isLength(status.trim(), { min: 1 })) {
+        errors.push({ field: 'status', message: 'Status is required' });
+      }
 
-      const event = await newEvent.save();
-      // Update createdBy in User model
-      await User.findByIdAndUpdate(
-        createdBy,
-        { $push: { createdEvents: event._id } },
-        { new: true }, // Return the updated user
-      );
-      // Call setEventReminder() to set notification for 1 week and 1 day prior to event
-      notificationController.setEventReminder(event.toObject());
-      return res.status(201).json({ message: 'Event created successfully', newEvent });
-    } catch (error) {
-      // console.error('Error occurred while creating event:', error);
-      return res.status(500).json({ message: 'Error occured while creating event', error });
-    }
+      // Handle tags
+      let tagsArray = [];
+      if (tags) {
+        tagsArray = tags.split(/[\s,]+/).map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+      } else if (!tags || !validator.isLength(tags.trim(), { min: 1 })) {
+        errors.push({ field: 'tags', message: 'Tags is required' });
+      }
+
+      // Check if the user exists
+      const createdBy = req.user._id; // Assume `req.user` contains the authenticated user
+      const user = await User.findById(createdBy);
+      if (!user) {
+        errors.push({ field: 'user', message: 'User not found' });
+      }
+
+      if (errors.length > 0) {
+        // Clean up uploaded files in case of validation errors
+        req.files.forEach((file) => fs.unlinkSync(path.join(mediaDir, file.filename)));
+        return res.status(400).json({ errors });
+      }
+
+      try {
+        const newEvent = await Event.create({
+          title,
+          description,
+          location,
+          organizer: {
+            address: organizerAddress,
+            name: organizerName,
+            email: organizerEmail,
+          },
+          startDateTime,
+          endDateTime,
+          createdBy,
+          tags: tagsArray, // Use the processed tags array
+          media, // Store filenames of uploaded files
+          category,
+          status: status || 'active',
+        });
+
+        return res.status(201).json({
+          status: 'success',
+          data: {
+            event: newEvent,
+          },
+        });
+      } catch (error) {
+        // Clean up uploaded files in case of a server error
+        req.files.forEach((file) => fs.unlinkSync(path.join(mediaDir, file.filename)));
+        return res.status(500).json({
+          field: 'server',
+          message: error.message,
+        });
+      }
+    });
   }
+  // const {
+  //   title, description, startDateTime, endDateTime,
+  //   location, attendees, tags, media,
+  //   isRecurring, recurrenceRule, catagory, status,
+  // } = req.body;
+
+  // if (!title) { return res.status(400).json({ error: 'Title is required' }); }
+  // if (!description) { return res.status(400).json({ error: 'Description is required' }); }
+  // if (!startDateTime) { return res.status(400).json({ error: 'StartDateTime is required' }); }
+  // // if (!createdBy) { return res.status(400).json({ error: 'CreatedBy is required' }); }
+  // if (!location || !validateLocation(location)) {
+  //  return res.status(400).json({ error: 'Location is missing or not complete.' });
+  // }
+  // if (!tags) { return res.status(400).json({ error: 'Tags is required' }); }
+
+  // try {
+  //   const createdBy = req.user._id;
+  //   const newEvent = new Event({
+  //     title,
+  //     description,
+  //     location,
+  //     startDateTime,
+  //     endDateTime,
+  //     createdBy,
+  //     attendees,
+  //     tags,
+  //     media,
+  //     catagory,
+  //     status,
+  //     recurrenceRule,
+  //     isRecurring,
+  //   });
+
+  //   const event = await newEvent.save();
+  //   // Update createdBy in User model
+  //   await User.findByIdAndUpdate(
+  //     createdBy,
+  //     { $push: { createdEvents: event._id } },
+  //     { new: true }, // Return the updated user
+  //   );
+  //   // Call setEventReminder() to set notification for 1 week and 1 day prior to event
+  //   notificationController.setEventReminder(event.toObject());
+  //   return res.status(201).json({ message: 'Event created successfully', newEvent });
+  // } catch (error) {
+  //   // console.error('Error occurred while creating event:', error);
+  //   return res.status(500).json({ message: 'Error occured while creating event', error });
+  // }
 
   static async getEventById(req, res) {
     const { id } = req.params;

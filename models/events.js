@@ -1,77 +1,95 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
-const { Schema, model } = mongoose;
-
-const eventSchema = new Schema({
-  title: {
-    type: String,
-    required: true,
+const eventSchema = new mongoose.Schema({
+  title: { type: String },
+  description: { type: String },
+  location: { type: String }, // Optional field
+  organizer: {
+    address: { type: String },
+    name: { type: String },
+    email: { type: String }, // Removed email validation
   },
-  description: {
-    type: String,
-    required: true,
-  },
-  startDateTime: { // Date and time when the event starts
-    type: Date,
-    required: true,
-  },
-  endDateTime: { // Date and time when the event ends
-    type: Date,
-  },
-  location: {
-    address: {
-      type: String,
-      required: true,
-    },
-    city: {
-      type: String,
-      required: true,
-    },
-    state: {
-      type: String,
-      required: true,
-    },
-    zip_code: {
-      type: String,
-      required: false,
-    },
-    googleMapsLink: { // Link to Google Maps location
-      type: String,
-    },
-  },
-  createdBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User', // ref is reference to the users in user model
-    required: true,
-  },
-  attendees: [{
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-  }], // ref is reference to the users in user model
-  tags: {
-    type: [String], // Array of tags as strings
-    required: true,
-  },
-  media: {
-    pictures: [{ type: String }], // Array of picture URLs
-    videos: [{ type: String }], // Array of video URLs
-  },
-  status: { // Event status (e.g., 'Scheduled', 'Cancelled', 'Completed')
-    type: String,
-    enum: ['Scheduled', 'Cancelled', 'Completed'],
-    default: 'Scheduled',
-  },
-  category: { // Category of the event (e.g., 'Concert', 'Workshop')
-    type: String,
-  },
-  isRecurring: { // Flag for recurring events
-    type: Boolean,
-    default: false,
-  },
-  recurrenceRule: { // Recurrence rule if the event is recurring
-    type: String,
-  },
+  startDateTime: { type: Date },
+  endDateTime: { type: Date },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  tags: [{ type: String }],
+  media: [{ type: String }], // For storing media file URLs or identifiers
+  category: { type: String },
+  status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 });
 
-const Event = model('Event', eventSchema);
-export default Event;
+// Add indexes for performance optimization
+eventSchema.index({ createdBy: 1 });
+eventSchema.index({ startDateTime: 1 });
+
+const Event = mongoose.model('Event', eventSchema);
+
+module.exports = Event;
+
+// import mongoose from 'mongoose';
+
+// const { Schema, model } = mongoose;
+
+// const eventSchema = new Schema({
+//   title: {
+//     type: String,
+//     required: true,
+//   },
+//   description: {
+//     type: String,
+//     required: true,
+//   },
+//   startDateTime: {
+//     type: Date,
+//     required: true,
+//   },
+//   endDateTime: {
+//     type: Date,
+//   },
+//   location: {
+//     type: String,
+//     required: false,
+//   },
+//   createdBy: {
+//     type: Schema.Types.ObjectId,
+//     ref: 'User',
+//     required: true,
+//   },
+//   organizer: {
+//     name: {
+//       type: String,
+//       required: false,
+//     },
+//     email: {
+//       type: String,
+//       required: false,
+//     },
+//     phone: {
+//       type: String,
+//       required: false,
+//     },
+//   },
+//   attendees: [{
+//     type: Schema.Types.ObjectId,
+//     ref: 'User',
+//   }],
+//   tags: {
+//     type: [String],
+//     required: true,
+//   },
+//   media: {
+//     pictures: [{ type: String }],
+//     videos: [{ type: String }],
+//   },
+//   status: {
+//     type: String,
+//     enum: ['Scheduled', 'Cancelled', 'Completed'],
+//     default: 'Scheduled',
+//   },
+//   category: {
+//     type: String,
+//   },
+// });
+
+// const Event = model('Event', eventSchema);
+// export default Event;
