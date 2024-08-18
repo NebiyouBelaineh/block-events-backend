@@ -1,13 +1,65 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import jwt from 'jsonwebtoken';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import validator from 'validator';
 import { promisify } from 'util';
 import User from '../models/user';
 import AppError from '../util/appError';
 
 class AuthController {
-  static async register(req, res, next) {
+  static async register(req, res) {
+    const {
+      userName, email, password, passwordConfirm,
+    } = req.body;
+    const errors = [];
+
+    if (!email || validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is required' });
+    }
+    if (!userName || validator.isEmpty(userName.trim())) {
+      errors.push({ field: 'userName', message: 'Username is required' });
+    }
+    if (!password || validator.isEmpty(password.trim())) {
+      errors.push({ field: 'password', message: 'Password is required' });
+    }
+    if (!passwordConfirm || validator.isEmpty(passwordConfirm.trim())) {
+      errors.push({ field: 'passwordConfirm', message: 'PasswordConfirm is required' });
+    }
+    // if (errors.length > 0) {
+    //   return res.status(400).json({
+    //     errors,
+    //   });
+    // }
+    if (!validator.isLength(password, { min: 8 }) && !validator.isEmpty(password.trim())) {
+      errors.push({ field: 'password', message: 'Password must be at least 8 characters' });
+    }
+    if (!validator.isEmail(email) && !validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is invalid' });
+    }
+    if (password !== passwordConfirm) {
+      errors.push({ field: 'passwordConfirm', message: 'Passwords do not match' });
+    }
+    const user = await User.findOne({ userName });
+    if (user) {
+      errors.push({ field: 'userName', message: 'Username already exists' });
+    }
+    // if email is duplicated
+    const userEmail = await User.findOne({ email });
+    if (userEmail) {
+      errors.push({ field: 'email', message: 'Email already exists' });
+    }
+    if (errors.length > 0) {
+      return res.status(400).json({
+        errors,
+      });
+    }
     try {
-      const newUser = await User.create(req.body);
+      const newUser = await User.create({
+        userName,
+        email,
+        password,
+        passwordConfirm,
+      });
 
       const token = AuthController.signToken(newUser._id);
       res.cookie('jwt', token, {
@@ -30,21 +82,40 @@ class AuthController {
       //     message: error.message,
       //     type: error.stack,
       //   });
-      return next(error);
+      return res.status(500).json({
+        field: 'server',
+        message: error.message,
+      });
     }
   }
 
-  static async login(req, res, next) {
+  static async login(req, res) {
+    const { email, password } = req.body;
+    const errors = [];
+
+    if (!email || validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is required' });
+    }
+    if (!password || validator.isEmpty(password.trim())) {
+      errors.push({ field: 'password', message: 'Password is required' });
+    }
+    if (!validator.isEmail(email) && !validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is invalid' });
+    }
+
     try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return next(new AppError('Please provide email and password', 400));
-      }
-
+      console.log(errors);
       const user = await User.findOne({ email }).select('+password');
-      if (!user || !await user.correctPassword(password, user.password)) {
-        return next(new AppError('Incorrect email or password', 401));
+      if ((!user || !await user.correctPassword(password, user.password)) && errors.length === 0) {
+        errors.push({ field: 'server', message: 'Incorrect email or password' });
+        return res.status(401).json({
+          errors,
+        });
+      }
+      if (errors.length > 0) {
+        return res.status(400).json({
+          errors,
+        });
       }
       const token = AuthController.signToken(user._id);
       res.cookie('jwt', token, {
@@ -58,7 +129,10 @@ class AuthController {
         token,
       });
     } catch (error) {
-      return next(error);
+      return res.status(500).json({
+        field: 'server',
+        message: error.message,
+      });
     }
   }
 

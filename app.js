@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 import notificationController from './controllers/notificationController';
 import userRoutes from './routes/userRoutes';
 import eventRoutes from './routes/eventRoutes';
@@ -8,7 +10,6 @@ import authRoutes from './routes/authRoutes';
 import { checkDbStatus, getCounts } from './controllers/systemCheckControllers';
 import { connectDB, disconnectDB } from './config/db';
 import AppError from './util/appError';
-import globalErrorHandler from './controllers/errorController';
 import serviceRoutes from './routes/serviceRoutes';
 
 // Load environment variables
@@ -30,6 +31,16 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// middleware to serve satic files
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
+
+// ensure the media folder exits
+const mediaDir = path.join(publicDir, 'media');
+if (!fs.existsSync(mediaDir)) {
+  fs.mkdirSync(mediaDir, { recursive: true });
+}
 
 app.use(express.json());
 
@@ -53,7 +64,7 @@ app.all('*', (req, res, next) => {
 });
 
 // middlewhare handler
-app.use(globalErrorHandler);
+// app.use(globalErrorHandler);
 // Define the port
 const port = process.env.PORT || 3300;
 
