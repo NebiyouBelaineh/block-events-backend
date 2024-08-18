@@ -158,18 +158,12 @@ class EventController {
    * Accessed through /api/events/myevents
   */
   static async getEventsByCreator(req, res) {
-    const userId = req.body;
+    const { user } = req;
 
-    if (!userId || validateId(userId) === false) {
-      return res.status(400).json({ error: 'Please provide appropriate userId' });
-    }
     try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      const notAllowed = ['_id'];
+      const notAllowed = [''];
       const myEvents = await Event.find({ _id: { $in: user.createdEvents } });
+      // console.log(myEvents);
       const filteredRegisteredEvents = myEvents.map((event) => Object.fromEntries(
         Object.entries(event.toObject()).filter(([key]) => !notAllowed.includes(key)),
       ));
