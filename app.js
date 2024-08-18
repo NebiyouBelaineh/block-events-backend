@@ -9,6 +9,7 @@ import { checkDbStatus, getCounts } from './controllers/systemCheckControllers';
 import { connectDB, disconnectDB } from './config/db';
 import AppError from './util/appError';
 import globalErrorHandler from './controllers/errorController';
+import serviceRoutes from './routes/serviceRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +46,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/status', checkDbStatus);
 app.use('/api/counts', getCounts);
 app.use('/api/auth', authRoutes);
+app.use('/api/service', serviceRoutes);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`));
