@@ -282,7 +282,7 @@ class EventController {
 
       await event.save();
       // Send email notification of event update
-      // notificationController.eventUpdate(event.toObject());
+      notificationController.eventUpdate(event.toObject());
       return res.status(200).json({
         status: 'success',
         data: {

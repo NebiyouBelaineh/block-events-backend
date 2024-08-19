@@ -135,7 +135,7 @@ class notificationController {
 
   static async serviceRequest(req, res) {
     const { service } = req.body;
-    const user = req.user;
+    const { user } = req;
     const data = {
       from: {
         name: 'Block Events',
@@ -146,7 +146,7 @@ class notificationController {
       text: `Hello,\n ${user.email} would like to request ${service} services. Please contact for further details.`,
     };
     try {
-      const result = await mg.sendMail(data);
+      await mg.sendMail(data);
       res.json({ message: 'Service request email sent successfully' });
     } catch (err) {
       console.log(err);
@@ -154,6 +154,7 @@ class notificationController {
     }
   }
   // will be used in app.js to check for due notifications
+
   static async sendDueNotifications() {
     const today = new Date();
     const dueDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
