@@ -13,7 +13,7 @@ const eventSchema = new mongoose.Schema({
   endDateTime: { type: Date },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   tags: [{ type: String }],
-  media: [{ type: String }], // For storing media file URLs or identifiers
+  media: { type: String }, // For storing media file URLs or identifiers
   category: { type: String },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 });
