@@ -272,7 +272,7 @@ class EventController {
       event.endDateTime = endDateTime || event.endDateTime;
       event.category = category || event.category;
       event.status = status || event.status;
-      event.tags = tags ? tags.split(/[\s,]+/).map((tag) => tag.trim()).filter((tag) => tag.length > 0) : event.tags;
+      event.tags = tags ? tags.split(/[,]+/).map((tag) => tag.trim()).filter((tag) => tag.length > 0) : event.tags;
       if (media) {
         if (event.media) {
           fs.unlinkSync(path.join(mediaDir, event.media));
@@ -281,8 +281,8 @@ class EventController {
       }
 
       await event.save();
-	  // Send email notification of event update
-      notificationController.eventUpdate(event.toObject());
+      // Send email notification of event update
+      // notificationController.eventUpdate(event.toObject());
       return res.status(200).json({
         status: 'success',
         data: {
