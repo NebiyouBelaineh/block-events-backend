@@ -12,6 +12,7 @@ const eventSchema = new mongoose.Schema({
   startDateTime: { type: Date },
   endDateTime: { type: Date },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   tags: [{ type: String }],
   media: [{ type: String }], // For storing media file URLs or identifiers
   category: { type: String },

@@ -221,7 +221,8 @@ class AuthController {
         console.log('User recently changed password');
         return res.status(200).json({ isAuthenticated: false, error: 'User recently changed password. Please log in again' });
       }
-      return res.status(200).json({ isAuthenticated: true });
+      // console.log(currentUser);
+      return res.status(200).json({ isAuthenticated: true, user: currentUser });
     } catch (error) {
       console.log(error.message);
       return res.status(200).json({ isAuthenticated: false, error: 'Invalid token' });

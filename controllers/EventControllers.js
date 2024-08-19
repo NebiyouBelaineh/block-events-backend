@@ -338,21 +338,22 @@ class EventController {
       if (!event) {
         return res.status(404).json({ error: 'Event not found' });
       }
-      const attendees = await User.find({ _id: { $in: event.attendees } });
+      const attendees = await User.find({ _id: { $in: event.toObject().attendees } });
+      // console.log(attendees);
 
-      if (attendees && attendees.length > 0) {
+      if (attendees) {
         // Filter out unnecessary fields
-        const allowedFields = ['profile', 'userName', 'email'];
-        const filterdAttendees = attendees.map((attendee) => {
-          const filteredAttendee = {};
-          allowedFields.forEach((field) => {
-            if (attendee[field]) {
-              filteredAttendee[field] = attendee[field];
-            }
-          });
-          return filteredAttendee;
-        });
-        return res.json(filterdAttendees);
+        // const allowedFields = ['profile', 'userName', 'email', '_id'];
+        // const filterdAttendees = attendees.map((attendee) => {
+        //   const filteredAttendee = {};
+        //   allowedFields.forEach((field) => {
+        //     if (attendee[field]) {
+        //       filteredAttendee[field] = attendee[field];
+        //     }
+        //   });
+        //   return filteredAttendee;
+        // });
+        return res.json(attendees);
       }
       return res.status(404).json({ error: 'Attendees not found' });
     } catch (error) {
