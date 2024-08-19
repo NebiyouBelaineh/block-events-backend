@@ -1,6 +1,7 @@
 import express from 'express';
 import EventController from '../controllers/EventControllers';
 import AuthController from '../controllers/authController';
+import upload from '../middleware/uploadMiddlware';
 
 const router = express.Router();
 
@@ -16,8 +17,8 @@ router.post('/:id/feedback', AuthController.protect, EventController.sendFeedBac
 // GET all, GET by id, POST, PUT, DELETE events
 router.get('/', EventController.getAllEvents);
 router.get('/:id', AuthController.protect, EventController.getEventById);
-router.post('/', AuthController.protect, EventController.createEvent);
-router.put('/:id', AuthController.protect, EventController.updateEvent);
+router.post('/', AuthController.protect, upload.single('media'), EventController.createEvent);
+router.put('/:id', AuthController.protect, upload.single('media'), EventController.updateEvent);
 router.delete('/:id', AuthController.protect, EventController.deleteEvent);
 
 // Register and Unregister for an event
