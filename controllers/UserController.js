@@ -1,3 +1,6 @@
+import path from 'path';
+import fs from 'fs';
+import validator from 'validator';
 import User from '../models/user';
 import Event from '../models/events';
 import { validateId } from '../services/Validators';
@@ -67,29 +70,87 @@ class UserController {
   }
 
   static async updateUser(req, res) {
+    const mediaDir = path.join(__dirname, '../public/media');
     const { id } = req.params;
-    if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
+    if (!id || validateId(id) === false) {
+      return res.status(400).json({ errors: [{ field: 'server', message: 'Please provide appropriate Id' }] });
+    }
+    const user = await User.findOne({ _id: id }).select('+password');
+    if (!user) {
+      if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
+      return res.status(404).json({ errors: [{ field: 'server', message: 'User not found' }] });
+    }
+    if (user._id.toString() !== req.user._id.toString()) {
+      if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
+      return res.status(403).json({ errors: [{ field: 'server', message: 'You are not authorized to update this user' }] });
+    }
+    const {
+      userName, email, currentPassword, newPassword,
+      firstName, lastName, bio, confirmPassword,
+    } = req.body;
+    const avatar = req.file ? req.file.filename : null;
+    const errors = [];
+    console.log(req.body);
+    if (!userName || validator.isEmpty(userName.trim())) {
+      errors.push({ field: 'userName', message: 'Username is required' });
+    }
+    if (validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Email is required' });
+    }
+    if (!validator.isEmail(email) && !validator.isEmpty(email.trim())) {
+      errors.push({ field: 'email', message: 'Valid email is required' });
+    }
 
-    const user = await User.findOne({ _id: id });
-    if (!user) { return res.status(404).json({ error: 'User not found' }); }
+    if (currentPassword && !validator.isEmpty(currentPassword.trim())) {
+      if (!await user.correctPassword(currentPassword, user.password)) {
+        if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
+        errors.push({ field: 'currentPassword', message: 'Current password is incorrect' });
+        return res.status(400).json({ errors });
+      }
+      if (!newPassword && validator.isEmpty(newPassword.trim())) {
+        errors.push({ field: 'newPassword', message: 'New password is required' });
+      }
+      if (!confirmPassword && validator.isEmpty(confirmPassword.trim())) {
+        errors.push({ field: 'confirmPassword', message: 'Confirm password is required' });
+      }
+      if (!validator.isLength(newPassword, { min: 8 }) && !validator.isEmpty(newPassword.trim())) {
+        errors.push({ field: 'newPassword', message: 'New password must be at least 8 characters' });
+      }
+      if (errors.length > 0) {
+        if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
+        return res.status(400).json({ errors });
+      }
+      if (newPassword !== confirmPassword) {
+        errors.push({ field: 'confirmPassword', message: 'Confirm password does not match' });
+      }
+      if (errors.length > 0) {
+        if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
+        return res.status(400).json({ errors });
+      }
+      user.password = newPassword;
+      user.confirmPassword = confirmPassword;
+    } else if (newPassword || confirmPassword) {
+      errors.push({ field: 'currentPassword', message: 'Current password is required' });
+      return res.status(400).json({ errors });
+    }
 
+    if (errors.length > 0) {
+      if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
+      return res.status(400).json({ errors });
+    }
     try {
-      const reqBody = req.body;
-      let filteredObj = Object.fromEntries(
-        Object.entries(reqBody).filter(([key]) => allowed.includes(key)),
-      );
-      const updatedInfo = await User.findByIdAndUpdate(
-        id,
-        filteredObj,
-        { new: true }, // Return the updated user
-      );
-
-      filteredObj = Object.fromEntries(
-        Object.entries(updatedInfo.toObject()).filter(([key]) => allowed.includes(key)),
-      );
-      return res.json({ message: 'User updated', filteredObj });
+      user.userName = userName || user.userName;
+      user.email = email || user.email;
+      user.profile.firstName = firstName || user.profile.firstName;
+      user.profile.lastName = lastName || user.profile.lastName;
+      user.profile.bio = bio || user.profile.bio;
+      user.profile.avatar = avatar || user.profile.avatar;
+      await user.save();
+      user.password = undefined;
+      return res.json({ message: 'User updated', user });
     } catch (error) {
-      return res.status(500).json({ message: 'Error occured while updating user', error });
+      if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
+      return res.status(500).json({ errors: [{ field: 'server', message: 'Error occured while updating user' }] });
     }
   }
 

@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const { Schema } = mongoose;
+
 const eventSchema = new mongoose.Schema({
   title: { type: String },
   description: { type: String },
@@ -16,6 +18,10 @@ const eventSchema = new mongoose.Schema({
   tags: [{ type: String }],
   media: { type: String }, // For storing media file URLs or identifiers
   category: { type: String },
+  attendees: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  }],
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 });
 

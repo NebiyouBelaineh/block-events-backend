@@ -18,10 +18,9 @@ class EventController {
       endDateTime, category, status, tags,
     } = req.body;
     const mediaDir = path.join(__dirname, '../public/media');
-    const media = req.file ? req.file.filename : null; // Get the filenames of uploaded files
+    const media = req.file ? req.file.filename : null;
     const errors = [];
 
-    // Validate fields
     if (!title || !validator.isLength(title.trim(), { min: 1 })) {
       errors.push({ field: 'title', message: 'Title is required' });
     }
@@ -60,7 +59,6 @@ class EventController {
       errors.push({ field: 'status', message: 'Status is required' });
     }
 
-    // Handle tags
     let tagsArray = [];
     if (tags) {
       tagsArray = tags.split(/[\s,]+/).map((tag) => tag.trim()).filter((tag) => tag.length > 0);
@@ -77,7 +75,6 @@ class EventController {
     }
 
     if (errors.length > 0) {
-      // Clean up uploaded files in case of validation errors
       if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
       return res.status(400).json({ errors });
     }
@@ -95,12 +92,20 @@ class EventController {
         startDateTime,
         endDateTime,
         createdBy,
-        tags: tagsArray, // Use the processed tags array
-        media, // Store filenames of uploaded files
+        tags: tagsArray,
+        media,
         category,
         status: status || 'active',
       });
 
+      // Update createdBy in User model
+      await User.findByIdAndUpdate(
+        createdBy,
+        { $push: { createdEvents: newEvent._id } },
+        { new: true }, // Return the updated user
+      );
+      // Call setEventReminder() to set notification for 1 week and 1 day prior to event
+      notificationController.setEventReminder(newEvent.toObject());
       return res.status(201).json({
         status: 'success',
         data: {
@@ -108,7 +113,6 @@ class EventController {
         },
       });
     } catch (error) {
-      // Clean up uploaded files in case of a server error
       if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
       return res.status(500).json({
         field: 'server',
@@ -116,53 +120,6 @@ class EventController {
       });
     }
   }
-  // const {
-  //   title, description, startDateTime, endDateTime,
-  //   location, attendees, tags, media,
-  //   isRecurring, recurrenceRule, catagory, status,
-  // } = req.body;
-
-  // if (!title) { return res.status(400).json({ error: 'Title is required' }); }
-  // if (!description) { return res.status(400).json({ error: 'Description is required' }); }
-  // if (!startDateTime) { return res.status(400).json({ error: 'StartDateTime is required' }); }
-  // // if (!createdBy) { return res.status(400).json({ error: 'CreatedBy is required' }); }
-  // if (!location || !validateLocation(location)) {
-  //  return res.status(400).json({ error: 'Location is missing or not complete.' });
-  // }
-  // if (!tags) { return res.status(400).json({ error: 'Tags is required' }); }
-
-  // try {
-  //   const createdBy = req.user._id;
-  //   const newEvent = new Event({
-  //     title,
-  //     description,
-  //     location,
-  //     startDateTime,
-  //     endDateTime,
-  //     createdBy,
-  //     attendees,
-  //     tags,
-  //     media,
-  //     catagory,
-  //     status,
-  //     recurrenceRule,
-  //     isRecurring,
-  //   });
-
-  //   const event = await newEvent.save();
-  //   // Update createdBy in User model
-  //   await User.findByIdAndUpdate(
-  //     createdBy,
-  //     { $push: { createdEvents: event._id } },
-  //     { new: true }, // Return the updated user
-  //   );
-  //   // Call setEventReminder() to set notification for 1 week and 1 day prior to event
-  //   notificationController.setEventReminder(event.toObject());
-  //   return res.status(201).json({ message: 'Event created successfully', newEvent });
-  // } catch (error) {
-  //   // console.error('Error occurred while creating event:', error);
-  //   return res.status(500).json({ message: 'Error occured while creating event', error });
-  // }
 
   static async getEventById(req, res) {
     const { id } = req.params;
@@ -208,10 +165,9 @@ class EventController {
       organizerEmail, startDateTime,
       endDateTime, category, status, tags,
     } = req.body;
-    const media = req.file ? req.file.filename : null; // Get the filenames of uploaded files
+    const media = req.file ? req.file.filename : null;
     const errors = [];
 
-    // Validate fields
     if (!title || !validator.isLength(title.trim(), { min: 1 })) {
       errors.push({ field: 'title', message: 'Title is required' });
     }
@@ -250,19 +206,16 @@ class EventController {
       errors.push({ field: 'status', message: 'Status is required' });
     }
 
-    // Handle tags
     if (!tags || !validator.isLength(tags.trim(), { min: 1 })) {
       errors.push({ field: 'tags', message: 'Tags is required' });
     }
 
     if (errors.length > 0) {
-      // Clean up uploaded files in case of validation errors
       if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
       return res.status(400).json({ errors });
     }
 
     try {
-      // Update event fields
       event.title = title || event.title;
       event.description = description || event.description;
       event.location = location || event.location;
@@ -273,7 +226,7 @@ class EventController {
       event.endDateTime = endDateTime || event.endDateTime;
       event.category = category || event.category;
       event.status = status || event.status;
-      event.tags = tags ? tags.split(/[\s,]+/).map((tag) => tag.trim()).filter((tag) => tag.length > 0) : event.tags;
+      event.tags = tags ? tags.split(/[,]+/).map((tag) => tag.trim()).filter((tag) => tag.length > 0) : event.tags;
       if (media) {
         if (event.media) {
           fs.unlinkSync(path.join(mediaDir, event.media));
@@ -291,37 +244,12 @@ class EventController {
         },
       });
     } catch (error) {
-      // Clean up uploaded files in case of a server error
       if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
       return res.status(500).json({
         field: 'server',
         message: error.message,
       });
     }
-    // const { id } = req.params;
-    // if (!id || validateId(id) === false){
-    //  return res.status(400).json({ error: 'Please provide appropriate Id' }); }
-
-    // try {
-    //   /* createdBy and attendees would need their own endpoints
-    //    to be updated for security and convenience
-    //    */
-    //   const notAllowed = ['createdBy', 'attendees', '_id'];
-    //   const reqBody = req.body;
-    //   const entries = Object.entries(reqBody);
-    //   const filteredEntries = entries.filter(([key]) => !notAllowed.includes(key));
-    //   const filteredObj = Object.fromEntries(filteredEntries);
-    //   const updatedEvent = await Event.findByIdAndUpdate(
-    //     id,
-    //     filteredObj,
-    //     { new: true },
-    //   );
-    //   // Send email notification of event update
-    //   notificationController.eventUpdate(updatedEvent.toObject());
-    //   return res.json({ message: 'Event updated.', updatedEvent });
-    // } catch (error) {
-    //   return res.status(500).json({ message: 'Error occured while updating event', error });
-    // }
   }
 
   static async deleteEvent(req, res) {

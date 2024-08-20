@@ -25,11 +25,6 @@ class AuthController {
     if (!passwordConfirm || validator.isEmpty(passwordConfirm.trim())) {
       errors.push({ field: 'passwordConfirm', message: 'PasswordConfirm is required' });
     }
-    // if (errors.length > 0) {
-    //   return res.status(400).json({
-    //     errors,
-    //   });
-    // }
     if (!validator.isLength(password, { min: 8 }) && !validator.isEmpty(password.trim())) {
       errors.push({ field: 'password', message: 'Password must be at least 8 characters' });
     }
@@ -43,7 +38,6 @@ class AuthController {
     if (user) {
       errors.push({ field: 'userName', message: 'Username already exists' });
     }
-    // if email is duplicated
     const userEmail = await User.findOne({ email });
     if (userEmail) {
       errors.push({ field: 'email', message: 'Email already exists' });
@@ -59,6 +53,12 @@ class AuthController {
         email,
         password,
         passwordConfirm,
+        profile: {
+          firstName: '',
+          lastName: '',
+          bio: '',
+          avatar: 'profile.png',
+        },
       });
 
       const token = AuthController.signToken(newUser._id);
@@ -67,7 +67,6 @@ class AuthController {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
       });
-      // delete the password from the returned object
       newUser.password = undefined;
       return res.status(201).json({
         status: 'success',
@@ -77,11 +76,6 @@ class AuthController {
         },
       });
     } catch (error) {
-      //   return res.status(500).json({
-      //     status: 'fail',
-      //     message: error.message,
-      //     type: error.stack,
-      //   });
       return res.status(500).json({
         field: 'server',
         message: error.message,
@@ -119,7 +113,6 @@ class AuthController {
       }
       const token = AuthController.signToken(user._id);
       res.cookie('jwt', token, {
-        // Set to expire in minutes
         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 60 * 60 * 1000),
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -140,30 +133,27 @@ class AuthController {
     try {
       const token = (req.headers.authorization && req.headers.authorization.startsWith('Bearer')
         ? req.headers.authorization.split(' ')[1] : undefined);
-      // console.log(token, req.headers.authorization);
       if (!token) {
-        return next(new AppError('You are not logged in', 401));
+        return res.status(401).json({ errors: [{ field: 'server', message: 'You are not logged in' }] });
       }
       const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
       const currentUser = await User.findById(decoded.id);
       if (!currentUser) {
-        return next(new AppError('The user no longer exists', 401));
+        return res.status(401).json({ errors: [{ field: 'server', message: 'The user no longer exists' }] });
       }
-      // check if the user changed password after the token was issued
       if (currentUser.changedPasswordAfter(decoded.iat)) {
-        return next(new AppError('User recently changed password. Please log in again', 401));
+        return res.status(401).json({ errors: [{ field: 'server', message: 'User recently changed password. Please log in again' }] });
       }
       req.user = currentUser;
       return next();
     } catch (error) {
-      return next(error);
+      return res.status(401).json({ errors: [{ field: 'server', message: 'User recently changed password. Please log in again' }] });
     }
   }
 
   static restrict(...roles) {
     return (req, res, next) => {
-      // Implement the logic here
-      const userRole = req.user.role; // Assuming req.user contains the user's role
+      const userRole = req.user.role;
 
       if (!roles.includes(userRole)) {
         return next(new AppError('You do not have permission to perform this action', 403));
@@ -216,7 +206,6 @@ class AuthController {
         console.log('User not found');
         return res.status(200).json({ isAuthenticated: false, error: 'User not found' });
       }
-      // check if the user changed password after the token was issued
       if (currentUser.changedPasswordAfter(decoded.iat)) {
         console.log('User recently changed password');
         return res.status(200).json({ isAuthenticated: false, error: 'User recently changed password. Please log in again' });
