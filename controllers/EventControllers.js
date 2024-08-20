@@ -96,6 +96,14 @@ class EventController {
         status: status || 'active',
       });
 
+      // Update createdBy in User model
+      await User.findByIdAndUpdate(
+        createdBy,
+        { $push: { createdEvents: newEvent._id } },
+        { new: true }, // Return the updated user
+      );
+      // Call setEventReminder() to set notification for 1 week and 1 day prior to event
+      notificationController.setEventReminder(newEvent.toObject());
       return res.status(201).json({
         status: 'success',
         data: {
