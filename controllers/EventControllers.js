@@ -69,7 +69,8 @@ class EventController {
     }
 
     // Check if the user exists
-    const createdBy = req.user._id; // Assume `req.user` contains the authenticated user
+    const createdBy = req.user._id;
+    // const { createdBy } = req.body;
     const user = await User.findById(createdBy);
     if (!user) {
       errors.push({ field: 'user', message: 'User not found' });
@@ -281,7 +282,7 @@ class EventController {
       }
 
       await event.save();
-	  // Send email notification of event update
+      // Send email notification of event update
       notificationController.eventUpdate(event.toObject());
       return res.status(200).json({
         status: 'success',
@@ -325,6 +326,7 @@ class EventController {
 
   static async deleteEvent(req, res) {
     const { id } = req.params;
+    console.log(id);
     if (!id || validateId(id) === false) { return res.status(400).json({ error: 'Please provide appropriate Id' }); }
 
     try {
@@ -364,12 +366,12 @@ class EventController {
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      const notAllowed = ['createdBy', 'attendees', '_id'];
       const userRegisteredEvents = await Event.find({ _id: { $in: user.registeredEvents } });
-      const filteredRegisteredEvents = userRegisteredEvents.map((event) => Object.fromEntries(
-        Object.entries(event.toObject()).filter(([key]) => !notAllowed.includes(key)),
-      ));
-      return res.json({ userRegisteredEvents: filteredRegisteredEvents });
+      // const notAllowed = ['createdBy', 'attendees', '_id'];
+      // const filteredRegisteredEvents = userRegisteredEvents.map((event) => Object.fromEntries(
+      //   Object.entries(event.toObject()).filter(([key]) => !notAllowed.includes(key)),
+      // ));
+      return res.json({ userRegisteredEvents });
     } catch (error) {
       return res.status(500).json({ message: 'Error occurred while getting events', error });
     }

@@ -146,13 +146,14 @@ class notificationController {
       text: `Hello,\n ${user.email} would like to request ${service} services. Please contact for further details.`,
     };
     try {
-      const result = await mg.sendMail(data);
+      await mg.sendMail(data);
       res.json({ message: 'Service request email sent successfully' });
     } catch (err) {
       console.log(err);
       res.status(500).json({ message: 'Error sending service request email' });
     }
   }
+
   // will be used in app.js to check for due notifications
   static async sendDueNotifications() {
     const today = new Date();
