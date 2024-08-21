@@ -73,7 +73,6 @@ class EventController {
     if (!user) {
       errors.push({ field: 'user', message: 'User not found' });
     }
-
     if (errors.length > 0) {
       if (req.file) fs.unlinkSync(path.join(mediaDir, req.file.filename));
       return res.status(400).json({ errors });
@@ -229,7 +228,9 @@ class EventController {
       event.tags = tags ? tags.split(/[,]+/).map((tag) => tag.trim()).filter((tag) => tag.length > 0) : event.tags;
       if (media) {
         if (event.media) {
-          fs.unlinkSync(path.join(mediaDir, event.media));
+          if (fs.existsSync(path.join(mediaDir, event.media))) {
+            fs.unlinkSync(path.join(mediaDir, event.media));
+          }
         }
         event.media = media;
       }

@@ -10,5 +10,6 @@ router.get('/:id', AuthController.protect, UserController.getUserById);
 router.get('/', AuthController.protect, AuthController.restrict('admin'), UserController.getAllUsers);
 router.put('/:id', AuthController.protect, upload.single('avatar'), UserController.updateUser);
 router.delete('/:id', AuthController.protect, UserController.deleteUser);
+router.delete('/:id/avatar', AuthController.protect, UserController.delteAvatar);
 
 export default router;
