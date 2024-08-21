@@ -57,7 +57,7 @@ class AuthController {
           firstName: '',
           lastName: '',
           bio: '',
-          avatar: 'profile.png',
+          avatar: '',
         },
       });
 

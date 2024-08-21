@@ -66,13 +66,13 @@ class UserController {
         return res.status(404).json({ errors: [{ field: 'server', message: 'User not found' }] });
       }
 
-      if (user.profile.avatar && user.profile.avatar !== 'profile.png') {
+      if (user.profile.avatar && user.profile.avatar !== '') {
         if (fs.existsSync(path.join(mediaDir, user.profile.avatar))) {
           fs.unlinkSync(path.join(mediaDir, user.profile.avatar));
         }
       }
       // Assuming default image is 'profile.png'
-      user.profile.avatar = 'profile.png';
+      user.profile.avatar = '';
       await user.save();
 
       // Optionally, delete the old image from the file system if needed
@@ -174,7 +174,7 @@ class UserController {
       user.profile.bio = bio || user.profile.bio;
       // user.profile.avatar = avatar || user.profile.avatar;
       if (avatar) {
-        if (user.profile.avatar && user.profile.avatar !== 'profile.png') {
+        if (user.profile.avatar && user.profile.avatar !== '') {
           if (fs.existsSync(path.join(mediaDir, user.profile.avatar))) {
             fs.unlinkSync(path.join(mediaDir, user.profile.avatar));
           }
