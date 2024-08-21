@@ -144,7 +144,15 @@ class UserController {
       user.profile.firstName = firstName || user.profile.firstName;
       user.profile.lastName = lastName || user.profile.lastName;
       user.profile.bio = bio || user.profile.bio;
-      user.profile.avatar = avatar || user.profile.avatar;
+      // user.profile.avatar = avatar || user.profile.avatar;
+      if (avatar) {
+        if (user.profile.avatar && user.profile.avatar !== 'profile.png') {
+          if (fs.existsSync(path.join(mediaDir, user.profile.avatar))) {
+            fs.unlinkSync(path.join(mediaDir, user.profile.avatar));
+          }
+        }
+        user.profile.avatar = avatar;
+      }
       await user.save();
       user.password = undefined;
       return res.json({ message: 'User updated', user });
