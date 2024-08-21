@@ -55,6 +55,34 @@ class UserController {
     return res.json({ user });
   }
 
+  static async delteAvatar(req, res) {
+    const mediaDir = path.join(__dirname, '../public/media');
+    const { id } = req.params;
+
+    try {
+      const user = await User.findById(id);
+
+      if (!user) {
+        return res.status(404).json({ errors: [{ field: 'server', message: 'User not found' }] });
+      }
+
+      if (user.profile.avatar && user.profile.avatar !== 'profile.png') {
+        if (fs.existsSync(path.join(mediaDir, user.profile.avatar))) {
+          fs.unlinkSync(path.join(mediaDir, user.profile.avatar));
+        }
+      }
+      // Assuming default image is 'profile.png'
+      user.profile.avatar = 'profile.png';
+      await user.save();
+
+      // Optionally, delete the old image from the file system if needed
+
+      return res.status(200).json({ message: 'Avatar updated successfully', avatar: 'profile.png' });
+    } catch (error) {
+      return res.status(500).json({ errors: [{ field: 'server', message: 'An error occurred while updating the avatar' }] });
+    }
+  }
+
   /** Gets all users
    * This Route may need protection and should only be for admin
     */
