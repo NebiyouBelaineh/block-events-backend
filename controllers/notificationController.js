@@ -22,7 +22,7 @@ class notificationController {
           .then(() => true)
           .catch((err) => {
             console.log('Error: ', err);
-            throw new Error(err);
+            // throw new Error(err);
           });
       }
     });
@@ -43,7 +43,7 @@ class notificationController {
       .then(() => true)
       .catch((err) => {
         console.log('Error: ', err);
-        throw new Error(err);
+        // throw new Error(err);
       });
   }
 
@@ -61,7 +61,7 @@ class notificationController {
       .then(() => true)
       .catch((err) => {
         console.log(err);
-        throw new Error(err);
+        // throw new Error(err);
       });
   }
 
@@ -82,7 +82,7 @@ class notificationController {
         .then(() => true)
         .catch((err) => {
           console.log(err);
-          throw new Error(err);
+          // throw new Error(err);
         });
     });
   }
@@ -104,7 +104,7 @@ class notificationController {
         .then(() => true)
         .catch((err) => {
           console.log(err);
-          throw new Error(err);
+          // throw new Error(err);
         });
     });
   }
@@ -185,7 +185,7 @@ class notificationController {
           .then(() => true)
           .catch((err) => {
             console.log(err);
-            throw new Error(err);
+            // throw new Error(err);
           });
       });
     });
