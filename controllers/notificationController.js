@@ -15,8 +15,9 @@ class notificationController {
           },
           to: `${email}`,
           subject: `Invitation to ${event.title}`,
-          text: `Hello,\n ${user.email} would like to invite you to attend ${event.title}\n/
-          If you would like more details please follow this link`,
+          html: `<h2>Hello,</h2><p>You have been invited to attend ${event.title}</p><br/>
+          <p>From: ${event.organizer.name}</p><br/>
+          <p>If you would like more details please follow this <a href="localhost:3000/events/>link</a></p>`,
         };
         mg.sendMail(data)
           .then(() => true)
@@ -55,7 +56,7 @@ class notificationController {
       },
       to: `${user.email}`,
       subject: `Registration for ${event.title}`,
-      text: `Hello,\n You have successfully registered for ${event.title}`,
+      html: `<h2>Hello,</h2><p>You have successfully registered for ${event.title}.</p><p>Thank you.</p>`,
     };
     mg.sendMail(data)
       .then(() => true)
@@ -76,7 +77,7 @@ class notificationController {
         },
         to: `${user.email}`,
         subject: `Event Cancellation for ${event.title}`,
-        text: `Hello,\n ${event.title} has been cancelled by ${event.createdBy}\n`,
+        html: `<h2>Hello,</h2><p>${event.title} has been cancelled by ${event.organizer.name}.</p><p>Thank you.</p>`,
       };
       mg.sendMail(data)
         .then(() => true)
@@ -98,7 +99,9 @@ class notificationController {
         },
         to: `${user.email}`,
         subject: `Event Update for ${event.title}`,
-        text: `Hello,\n ${event.title} has been updated by ${event.createdBy}\n`,
+        html: `<h2>Hello,</h2>
+        <p>${event.title} has been updated by ${event.orgainizer.name}. If you would like more details please follow this <a href="localhost:3000/events/>link</a></p>
+        <p>Thank you.</p>`,
       };
       mg.sendMail(data)
         .then(() => true)
