@@ -99,8 +99,8 @@ class notificationController {
         },
         to: `${user.email}`,
         subject: `Event Update for ${event.title}`,
-        html: `<h2>Hello,</h2>
-        <p>${event.title} has been updated by ${event.orgainizer.name}. If you would like more details please follow this <a href="localhost:3000/events/>link</a></p>
+        html: `<h2>Hello ${user.userName},</h2>
+        <p>${event.title} has been updated by ${event.organizer.name}. If you would like more details, please follow this <a href="http://localhost:3000/Events/${event._id}">link</a>.</p>
         <p>Thank you.</p>`,
       };
       mg.sendMail(data)
