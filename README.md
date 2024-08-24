@@ -51,46 +51,60 @@ Block Event is a comprehensive event management system designed to allow users t
 ### Prerequisites
 - **Node.js**: Ensure Node.js is installed on your system.
 
-### Setup
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/yourusername/block-event.git
-   cd block-event
-
 ## 🛠️ Setup
 
-### 1. Clone the Repository
+1. **Backend Setup**:
 
-1. Clone the repository:
+    Clone repository
+
 ```bash
-git clone https://github.com/yourusername/block-event.git
-cd block-event
+    git clone https://github.com/NebiyouBelaineh/block-events-backend
+    cd block-event-backend
+```
 
-2. **Backend Setup**:
+Navigate to the backend directory:
 
-    Navigate to the backend directory:
-    ```bash
+```bash
     cd  block-events-backend
+```
 
-    Install dependencies:
-     ```bash
+Install dependencies:
+
+```bash
     npm install
+```
 
-    Start the backend server:
-    ```bash
+Start the backend server:
+    
+```bash
     npm start
-3. **Frontend Setup**: 
+```
 
-    Navigate to the frontend directory:
-    ```bash
+2. **Frontend Setup**: 
+
+    Clone repository
+
+```bash
+    git clone https://github.com/duncmv/block-events-frontend
+    cd block-event-backend
+```
+
+Navigate to the frontend directory:
+
+```bash
     cd block-events-frontend
-    Install dependencies:
-    ```bash
+```
+
+Install dependencies:
+```bash
     npm install
-    Start the frontend server:
-    ```bash
+```
+
+Start the frontend server:
+
+```bash
     npm run dev
+```
 
 # 🚀 Usage
 
@@ -108,19 +122,19 @@ Once both the frontend and backend servers are up and running, open your browser
 
 ## 🔁 Application Flow
 
-1. **🌟 Landing Page**: 
+1. **🌟 Landing Page**
    - Users begin by exploring the landing page, which displays a list of available events.
 
-2. **🔑 Sign Up/In**: 
+2. **🔑 Sign Up/In**
    - Users can create a new account or log in to an existing account to access their dashboard.
 
-3. **🖥️ Dashboard**: 
+3. **🖥️ Dashboard**
    - After logging in, users can manage their profile, create or edit events, and view event-related statistics.
 
-4. **📅 Event Management**: 
+4. **📅 Event Management**
    - Users can create new events, edit existing ones, or delete events. They can also manage their event registrations.
 
-5. **📬 Email Notifications**: 
+5. **📬 Email Notifications**
    - Users receive email notifications for significant actions including account creation, profile updates, and event management.
 
 ## 👥 Contributors
@@ -131,6 +145,9 @@ Once both the frontend and backend servers are up and running, open your browser
 | **Nebiyou Belaineh**   | Backend & Frontend Developer   |
 | **Duncan T. Asiimwe**  | Backend & Frontend Developer   |
 
-## 📜 License
+## 📜 MIT License
 
-[Insert your license information here]
+The MIT License is a permissive free software license originating at the Massachusetts Institute of Technology (MIT). It is a simple and easy-to-understand license that places very few restrictions on reuse, making it a popular choice for open source projects.
+
+### License Text
+
