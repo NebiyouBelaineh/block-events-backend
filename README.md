@@ -80,31 +80,9 @@ Start the backend server:
     npm start
 ```
 
-2. **Frontend Setup**: 
 
-    Clone repository
+You can access the frontend repository [here](https://github.com/duncmv/block-events-frontend).
 
-```bash
-    git clone https://github.com/duncmv/block-events-frontend
-    cd block-event-backend
-```
-
-Navigate to the frontend directory:
-
-```bash
-    cd block-events-frontend
-```
-
-Install dependencies:
-```bash
-    npm install
-```
-
-Start the frontend server:
-
-```bash
-    npm run dev
-```
 
 # 🚀 Usage
 
