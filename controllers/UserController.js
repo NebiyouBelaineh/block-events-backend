@@ -118,7 +118,7 @@ class UserController {
     } = req.body;
     const avatar = req.file ? req.file.filename : null;
     const errors = [];
-    console.log(req.body);
+    // console.log(req.body);
     if (!userName || validator.isEmpty(userName.trim())) {
       errors.push({ field: 'userName', message: 'Username is required' });
     }
